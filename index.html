@@ -1,0 +1,2024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Global Idle Civilization</title>
+
+<!-- Firebase SDK v9 compat -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Almendra:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   ROOT THEME — Dark fantasy cartography aesthetic
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  --bg:         #0b0d0e;
+  --bg-raised:  #12161a;
+  --bg-card:    #181d23;
+  --bg-card-h:  #1e252d;
+  --bg-input:   #141920;
+  --border:     #2a3140;
+  --border-lt:  #3a4558;
+  --gold:       #e2b350;
+  --gold-dim:   #a8832e;
+  --gold-glow:  rgba(226,179,80,0.25);
+  --amber:      #d49a3e;
+  --red:        #d94545;
+  --red-dim:    #8c2e2e;
+  --green:      #4caf6a;
+  --green-dim:  #2d7a42;
+  --blue:       #4a90d9;
+  --blue-dim:   #2d5a8c;
+  --stone-c:    #8a9bb0;
+  --food-c:     #7ec87e;
+  --wood-c:     #c49a6c;
+  --iron-c:     #a0b0c0;
+  --txt:        #d5dce6;
+  --txt-dim:    #7d8a9a;
+  --txt-muted:  #4a5568;
+  --panel-blur: blur(12px);
+  --r:          6px;
+  --r-lg:       12px;
+  --shadow:     0 4px 24px rgba(0,0,0,0.5);
+  --font-title: 'Almendra', serif;
+  --font-body:  'Outfit', sans-serif;
+  /* Map tile size */
+  --tile:       28px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--txt);
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Ambient background */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse at 15% 10%, rgba(226,179,80,0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 90%, rgba(74,144,217,0.03) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.hidden { display: none !important; }
+
+/* ═══════ TYPOGRAPHY ═══════ */
+h1,h2,h3,h4 { font-family: var(--font-title); color: var(--gold); }
+
+/* ═══════ INPUTS ═══════ */
+input[type="text"], input[type="password"] {
+  font-family: var(--font-body);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--txt);
+  padding: 10px 14px;
+  border-radius: var(--r);
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+input:focus { border-color: var(--gold-dim); }
+input::placeholder { color: var(--txt-muted); }
+
+/* ═══════ BUTTONS ═══════ */
+.btn {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+.btn-gold {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dim) 100%);
+  color: #181d23;
+}
+.btn-gold:hover:not(:disabled) { filter: brightness(1.12); }
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border-lt);
+  color: var(--txt-dim);
+}
+.btn-outline:hover { border-color: var(--gold-dim); color: var(--gold); }
+
+.btn-red { background: var(--red-dim); color: #faa; border: 1px solid rgba(217,69,69,0.3); }
+.btn-red:hover { background: var(--red); color: #fff; }
+
+.btn-sm { padding: 7px 14px; font-size: 0.78rem; }
+.btn-xs { padding: 5px 10px; font-size: 0.72rem; }
+
+/* ═══════ TOAST ═══════ */
+.toast-box { position: fixed; top: 12px; right: 12px; z-index: 9999; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
+.toast-msg {
+  background: var(--bg-card);
+  border: 1px solid var(--border-lt);
+  border-radius: var(--r);
+  padding: 10px 16px;
+  font-size: 0.82rem;
+  box-shadow: var(--shadow);
+  animation: tIn 0.25s ease-out, tOut 0.25s 2.6s ease-in forwards;
+  pointer-events: auto;
+  max-width: 300px;
+}
+.toast-msg.gold { border-left: 3px solid var(--gold); }
+.toast-msg.red { border-left: 3px solid var(--red); }
+.toast-msg.green { border-left: 3px solid var(--green); }
+@keyframes tIn { from { opacity:0; transform:translateX(30px); } }
+@keyframes tOut { to { opacity:0; transform:translateX(30px); } }
+
+/* ═══════════════════════════════════════════════════════════════
+   SCREEN: LOGIN
+   ═══════════════════════════════════════════════════════════════ */
+.screen-login {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+  flex-direction: column; gap: 24px;
+  padding: 24px;
+}
+
+.login-brand {
+  text-align: center;
+  animation: fadeUp 0.6s ease-out;
+}
+@keyframes fadeUp { from { opacity:0; transform:translateY(20px); } }
+
+.login-emblem {
+  width: 80px; height: 80px;
+  margin: 0 auto 16px;
+  border: 2px solid var(--gold-dim);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.2rem;
+  background: radial-gradient(circle, var(--gold-glow) 0%, transparent 70%);
+  animation: pulse 3s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { box-shadow: 0 0 15px rgba(226,179,80,0.1); }
+  50% { box-shadow: 0 0 30px rgba(226,179,80,0.3); }
+}
+
+.login-brand h1 { font-size: 2rem; line-height: 1.1; margin-bottom: 6px; }
+.login-brand p { color: var(--txt-dim); font-size: 0.88rem; }
+
+.login-form {
+  display: flex; flex-direction: column; gap: 10px;
+  width: 100%; max-width: 320px;
+  animation: fadeUp 0.6s 0.15s ease-out both;
+}
+
+.login-err { color: var(--red); font-size: 0.82rem; text-align: center; }
+
+/* ═══════════════════════════════════════════════════════════════
+   SCREEN: TEAM SELECT
+   ═══════════════════════════════════════════════════════════════ */
+.screen-teams {
+  position: fixed; inset: 0; z-index: 100;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.teams-head { text-align: center; margin-bottom: 16px; }
+.teams-head h1 { font-size: 1.6rem; }
+.teams-head p { color: var(--txt-dim); font-size: 0.88rem; margin-top: 4px; }
+
+.create-box {
+  background: var(--bg-card);
+  border: 1px dashed var(--border-lt);
+  border-radius: var(--r-lg);
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 8px;
+  margin-bottom: 16px;
+  max-width: 500px;
+  margin-left: auto; margin-right: auto;
+  width: 100%;
+}
+.create-box .row { display: flex; gap: 8px; }
+.create-box .row input { flex: 1; }
+.create-box label { font-size: 0.78rem; color: var(--txt-muted); }
+
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.team-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.team-card:hover { border-color: var(--gold-dim); background: var(--bg-card-h); }
+.tc-info h3 { font-size: 0.95rem; margin-bottom: 2px; }
+.tc-info span { font-size: 0.8rem; color: var(--txt-dim); }
+.tc-lock { color: var(--gold-dim); font-size: 1rem; }
+
+/* Password prompt modal */
+.pw-modal {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.7);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.pw-box {
+  background: var(--bg-raised);
+  border: 1px solid var(--border-lt);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  max-width: 340px;
+  width: 100%;
+  text-align: center;
+}
+.pw-box h3 { margin-bottom: 12px; font-size: 1.1rem; }
+.pw-box input { margin-bottom: 10px; }
+.pw-box .btn { width: 100%; }
+
+/* ═══════════════════════════════════════════════════════════════
+   MAIN GAME LAYOUT
+   ═══════════════════════════════════════════════════════════════ */
+.game-wrap {
+  position: fixed; inset: 0; z-index: 10;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  grid-template-rows: 1fr;
+}
+
+/* ═══════ LEFT SIDEBAR ═══════ */
+.sidebar {
+  background: var(--bg-raised);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 20;
+}
+
+.side-head {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.side-head h2 { font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.side-head .sub { font-size: 0.78rem; color: var(--txt-dim); margin-top: 2px; }
+
+/* Resources strip */
+.res-strip {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.res-pill {
+  background: var(--bg-card);
+  border-radius: var(--r);
+  padding: 6px 8px;
+  text-align: center;
+  font-size: 0.78rem;
+}
+.res-pill .rv { font-weight: 700; font-size: 0.92rem; font-variant-numeric: tabular-nums; display: block; }
+.res-pill .rr { color: var(--txt-muted); font-size: 0.68rem; }
+.res-pill.c-gold .rv { color: var(--gold); }
+.res-pill.c-food .rv { color: var(--food-c); }
+.res-pill.c-stone .rv { color: var(--stone-c); }
+.res-pill.c-wood .rv { color: var(--wood-c); }
+.res-pill.c-iron .rv { color: var(--iron-c); }
+
+/* Sidebar tabs */
+.side-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+.side-tab {
+  flex: 1;
+  background: none; border: none;
+  color: var(--txt-muted);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 9px 6px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+}
+.side-tab:hover { color: var(--txt-dim); }
+.side-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+.side-panel {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 12px;
+  display: none;
+}
+.side-panel.active { display: block; }
+
+/* Building cards in sidebar */
+.bld-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  transition: border-color 0.15s;
+}
+.bld-card:hover { border-color: var(--border-lt); }
+.bld-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.bld-icon { font-size: 1.2rem; margin-right: 6px; }
+.bld-name { font-family: var(--font-title); font-size: 0.88rem; color: var(--txt); }
+.bld-lvl { font-size: 0.72rem; color: var(--txt-muted); }
+.bld-lvl b { color: var(--gold); font-size: 0.88rem; }
+.bld-desc { font-size: 0.75rem; color: var(--txt-dim); margin-bottom: 8px; line-height: 1.35; }
+.bld-costs { display: flex; gap: 8px; flex-wrap: wrap; font-size: 0.75rem; color: var(--txt-dim); margin-bottom: 8px; }
+.bld-costs .cc { display: flex; align-items: center; gap: 3px; }
+.cc.no { color: var(--red); }
+
+/* Placement items in sidebar */
+.place-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+.place-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 10px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.place-btn:hover { border-color: var(--gold-dim); background: var(--bg-card-h); }
+.place-btn.selected { border-color: var(--gold); background: rgba(226,179,80,0.08); box-shadow: 0 0 10px var(--gold-glow); }
+.place-btn .pi { font-size: 1.3rem; }
+.place-btn .pn { font-size: 0.72rem; font-weight: 600; }
+.place-btn .pc { font-size: 0.68rem; color: var(--txt-muted); }
+
+/* Leaderboard */
+.lb-row {
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: var(--r);
+  margin-bottom: 4px;
+  font-size: 0.82rem;
+}
+.lb-row:nth-child(odd) { background: var(--bg-card); }
+.lb-rank { width: 24px; font-family: var(--font-title); font-weight: 700; color: var(--txt-muted); }
+.lb-rank.r1 { color: var(--gold); }
+.lb-rank.r2 { color: #c0c0c0; }
+.lb-rank.r3 { color: #cd7f32; }
+.lb-name { flex: 1; margin-left: 6px; }
+.lb-pow { color: var(--gold-dim); font-weight: 600; }
+.lb-row.mine { background: rgba(226,179,80,0.06); }
+.lb-row.mine .lb-name { color: var(--gold); font-weight: 600; }
+
+/* Player list */
+.pl-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px;
+  border-radius: var(--r);
+  margin-bottom: 3px;
+  font-size: 0.82rem;
+}
+.pl-item:nth-child(odd) { background: var(--bg-card); }
+.pl-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.pl-dot.on { background: var(--green); box-shadow: 0 0 6px rgba(76,175,106,0.5); }
+.pl-dot.off { background: var(--txt-muted); }
+
+/* Footer actions */
+.side-foot {
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  display: flex; gap: 6px;
+}
+.side-foot .btn { flex: 1; font-size: 0.72rem; }
+
+/* ═══════ EVENT BANNER (floats over map) ═══════ */
+.event-float {
+  position: absolute;
+  top: 12px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  background: rgba(18,22,26,0.9);
+  backdrop-filter: var(--panel-blur);
+  border: 1px solid rgba(226,179,80,0.3);
+  border-radius: var(--r-lg);
+  padding: 10px 20px;
+  display: flex; align-items: center; gap: 14px;
+  animation: bannerIn 0.4s ease-out;
+  white-space: nowrap;
+}
+@keyframes bannerIn { from { opacity: 0; transform: translateX(-50%) translateY(-20px); } }
+.ev-text { font-size: 0.85rem; }
+.ev-text strong { color: var(--gold); font-family: var(--font-title); }
+.ev-timer { color: var(--gold); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ═══════════════════════════════════════════════════════════════
+   MAP AREA
+   ═══════════════════════════════════════════════════════════════ */
+.map-area {
+  position: relative;
+  overflow: hidden;
+  background: #0a0c0e;
+  cursor: crosshair;
+}
+
+.map-viewport {
+  position: absolute;
+  /* sized dynamically via JS */
+}
+
+/* Tile rendering via canvas for performance */
+#map-canvas {
+  display: block;
+  image-rendering: pixelated;
+}
+
+/* Selection & hover tooltip */
+.tile-tooltip {
+  position: fixed;
+  z-index: 50;
+  background: rgba(18,22,26,0.95);
+  backdrop-filter: var(--panel-blur);
+  border: 1px solid var(--border-lt);
+  border-radius: var(--r);
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  pointer-events: none;
+  max-width: 200px;
+  box-shadow: var(--shadow);
+}
+.tt-title { font-family: var(--font-title); color: var(--gold); font-size: 0.85rem; margin-bottom: 3px; }
+.tt-info { color: var(--txt-dim); }
+
+/* ═══════ MINI-MAP ═══════ */
+.minimap-wrap {
+  position: absolute;
+  bottom: 12px; right: 12px;
+  z-index: 30;
+  background: rgba(18,22,26,0.85);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+#minimap-canvas { display: block; }
+
+/* ═══════ SPAWN PICKER ═══════ */
+.spawn-overlay {
+  position: absolute; inset: 0;
+  z-index: 40;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.5);
+}
+.spawn-msg {
+  background: rgba(18,22,26,0.95);
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--r-lg);
+  padding: 20px 28px;
+  text-align: center;
+  max-width: 380px;
+}
+.spawn-msg h2 { font-size: 1.2rem; margin-bottom: 6px; }
+.spawn-msg p { color: var(--txt-dim); font-size: 0.85rem; margin-bottom: 10px; }
+
+/* ═══════ COMBAT LOG ═══════ */
+.combat-log {
+  position: absolute;
+  bottom: 12px; left: 12px;
+  z-index: 30;
+  background: rgba(18,22,26,0.85);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  width: 280px;
+  max-height: 150px;
+  overflow-y: auto;
+  padding: 6px 8px;
+  font-size: 0.72rem;
+  color: var(--txt-dim);
+  line-height: 1.5;
+}
+.combat-log .cl-entry { padding: 2px 0; border-bottom: 1px solid rgba(42,49,64,0.3); }
+.cl-atk { color: var(--red); }
+.cl-def { color: var(--blue); }
+.cl-gold { color: var(--gold); }
+
+/* ═══════ OFFLINE MODAL ═══════ */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,0.7);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal {
+  background: var(--bg-raised);
+  border: 1px solid var(--border-lt);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  max-width: 380px; width: 100%;
+  text-align: center;
+}
+.modal h2 { margin-bottom: 10px; }
+.modal p { color: var(--txt-dim); font-size: 0.85rem; }
+.off-rows { margin: 14px 0 18px; display: flex; flex-direction: column; gap: 6px; }
+.off-row {
+  display: flex; justify-content: space-between;
+  background: var(--bg-card);
+  border-radius: var(--r);
+  padding: 7px 12px;
+  font-size: 0.85rem;
+}
+.off-row .ov { font-weight: 700; }
+.ov.cg { color: var(--gold); }
+.ov.cf { color: var(--food-c); }
+.ov.cs { color: var(--stone-c); }
+.ov.cw { color: var(--wood-c); }
+.ov.ci { color: var(--iron-c); }
+
+/* ═══════ MOBILE: sidebar becomes bottom sheet ═══════ */
+@media (max-width: 768px) {
+  .game-wrap {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
+  .sidebar {
+    border-right: none;
+    border-top: 1px solid var(--border);
+    max-height: 45vh;
+    order: 2;
+  }
+  .map-area { order: 1; }
+  .combat-log { bottom: auto; top: 12px; left: 12px; }
+  .res-strip { grid-template-columns: repeat(5, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- TOASTS -->
+<div class="toast-box" id="toasts"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SCREEN 1: LOGIN
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="screen-login" id="scr-login">
+  <div class="login-brand">
+    <div class="login-emblem">🏛️</div>
+    <h1>Global Idle<br>Civilization</h1>
+    <p>Build. Conquer. Endure.</p>
+  </div>
+  <div class="login-form">
+    <input type="text" id="inp-user" placeholder="Your ruler name…" maxlength="20" autocomplete="off">
+    <button class="btn btn-gold" style="width:100%" onclick="doLogin()">Enter the World</button>
+    <p class="login-err hidden" id="login-err"></p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SCREEN 2: TEAM SELECT
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="screen-teams hidden" id="scr-teams">
+  <div class="teams-head">
+    <h1>Choose Your Civilization</h1>
+    <p id="teams-welcome">Welcome, ruler</p>
+  </div>
+
+  <div class="create-box">
+    <label>Found a new civilization</label>
+    <div class="row">
+      <input type="text" id="inp-team-name" placeholder="Civilization name…" maxlength="24">
+    </div>
+    <div class="row">
+      <input type="password" id="inp-team-pw" placeholder="Password (optional)" maxlength="30">
+      <button class="btn btn-gold btn-sm" onclick="doCreateTeam()">Found</button>
+    </div>
+  </div>
+
+  <p style="text-align:center;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--txt-muted);margin-bottom:10px;">— or join an existing one —</p>
+  <div class="team-grid" id="team-grid"></div>
+</div>
+
+<!-- Password prompt -->
+<div class="pw-modal hidden" id="pw-modal">
+  <div class="pw-box">
+    <h3>🔒 Enter Password</h3>
+    <p style="color:var(--txt-dim);font-size:0.82rem;margin-bottom:12px;">This civilization is protected</p>
+    <input type="password" id="inp-join-pw" placeholder="Password…">
+    <button class="btn btn-gold" onclick="doJoinWithPassword()">Join</button>
+    <button class="btn btn-outline btn-sm" style="width:100%;margin-top:6px;" onclick="hide('pw-modal')">Cancel</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SCREEN 3: MAIN GAME
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="game-wrap hidden" id="scr-game">
+
+  <!-- LEFT SIDEBAR -->
+  <div class="sidebar">
+    <div class="side-head">
+      <h2 id="g-civ-name">—</h2>
+      <div class="sub" id="g-player-name">—</div>
+    </div>
+
+    <!-- Resources -->
+    <div class="res-strip">
+      <div class="res-pill c-gold"><span class="rv" id="r-gold">0</span>🪙 Gold<br><span class="rr" id="rr-gold">+0/s</span></div>
+      <div class="res-pill c-food"><span class="rv" id="r-food">0</span>🌾 Food<br><span class="rr" id="rr-food">+0/s</span></div>
+      <div class="res-pill c-stone"><span class="rv" id="r-stone">0</span>🪨 Stone<br><span class="rr" id="rr-stone">+0/s</span></div>
+      <div class="res-pill c-wood"><span class="rv" id="r-wood">0</span>🪵 Wood<br><span class="rr" id="rr-wood">+0/s</span></div>
+      <div class="res-pill c-iron"><span class="rv" id="r-iron">0</span>⛓️ Iron<br><span class="rr" id="rr-iron">+0/s</span></div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="side-tabs">
+      <button class="side-tab active" data-t="build" onclick="sideTab('build')">Build</button>
+      <button class="side-tab" data-t="place" onclick="sideTab('place')">Place</button>
+      <button class="side-tab" data-t="rank" onclick="sideTab('rank')">Ranks</button>
+      <button class="side-tab" data-t="team" onclick="sideTab('team')">Team</button>
+    </div>
+
+    <!-- Build panel (economy upgrades) -->
+    <div class="side-panel active" id="sp-build"></div>
+
+    <!-- Place panel (map placement: walls, soldiers, etc.) -->
+    <div class="side-panel" id="sp-place"></div>
+
+    <!-- Leaderboard -->
+    <div class="side-panel" id="sp-rank"></div>
+
+    <!-- Team / players -->
+    <div class="side-panel" id="sp-team"></div>
+
+    <div class="side-foot">
+      <button class="btn btn-outline btn-xs" onclick="doLeave()">Leave Civ</button>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div class="map-area" id="map-area">
+    <canvas id="map-canvas"></canvas>
+
+    <!-- Event banner -->
+    <div class="event-float hidden" id="ev-banner">
+      <div class="ev-text"><strong id="ev-name">—</strong> <span id="ev-desc" style="color:var(--txt-dim);font-size:0.78rem;">—</span></div>
+      <div class="ev-timer" id="ev-timer">0:00</div>
+    </div>
+
+    <!-- Spawn overlay -->
+    <div class="spawn-overlay hidden" id="spawn-overlay">
+      <div class="spawn-msg">
+        <h2>Choose Spawn Location</h2>
+        <p>Click on the map to place your Town Hall.<br>Must be ≥15 tiles from any other civilization.</p>
+        <button class="btn btn-outline btn-sm" id="spawn-cancel-btn" onclick="cancelSpawn()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Mini-map -->
+    <div class="minimap-wrap">
+      <canvas id="minimap-canvas" width="140" height="140"></canvas>
+    </div>
+
+    <!-- Combat log -->
+    <div class="combat-log hidden" id="combat-log"></div>
+
+    <!-- Tooltip -->
+    <div class="tile-tooltip hidden" id="tile-tip"></div>
+  </div>
+</div>
+
+<!-- Offline modal -->
+<div class="modal-overlay hidden" id="off-modal">
+  <div class="modal">
+    <h2>⚡ Welcome Back</h2>
+    <p>Your civilization kept producing while you were away.</p>
+    <div class="off-rows" id="off-rows"></div>
+    <button class="btn btn-gold" onclick="hide('off-modal')">Collect</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     JAVASCRIPT — FULL GAME ENGINE
+     ═══════════════════════════════════════════════════════════════════ -->
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   FIREBASE CONFIG — Replace with YOUR project credentials
+   ═══════════════════════════════════════════════════════════════ */
+const firebaseConfig = {
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT.firebaseapp.com",
+  databaseURL:       "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+  projectId:         "YOUR_PROJECT",
+  storageBucket:     "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+/* ═══════════════════════════════════════════════════════════════
+   CONSTANTS & DEFINITIONS
+   ═══════════════════════════════════════════════════════════════ */
+const MAP_W = 200, MAP_H = 200;          // World size in tiles
+const TILE_PX = 28;                       // Pixel size per tile
+const SPAWN_MIN_DIST = 15;               // Min distance between spawns
+const TICK_MS = 3000;                     // Resource tick interval
+const COST_MULT = 1.4;                   // Building cost multiplier per level
+
+// 5 Resources
+const RES_KEYS = ['gold','food','stone','wood','iron'];
+const RES_ICONS = { gold:'🪙', food:'🌾', stone:'🪨', wood:'🪵', iron:'⛓️' };
+const RES_CSS = { gold:'cg', food:'cf', stone:'cs', wood:'cw', iron:'ci' };
+
+// Economy buildings (sidebar upgrades, not placed on map)
+const BUILDINGS = {
+  market:    { name:'Market',     icon:'🏪', desc:'Trade hub. +Gold.',       boosts:{gold:2},  baseCost:{gold:20,food:10,stone:5,wood:0,iron:0} },
+  farm:      { name:'Farm',       icon:'🌾', desc:'Fertile fields. +Food.',  boosts:{food:2},  baseCost:{gold:10,food:5,stone:0,wood:15,iron:0} },
+  quarry:    { name:'Quarry',     icon:'⛏️', desc:'Deep mines. +Stone.',     boosts:{stone:2}, baseCost:{gold:10,food:10,stone:5,wood:10,iron:0} },
+  lumberyard:{ name:'Lumber Yard',icon:'🪓', desc:'Timber camp. +Wood.',     boosts:{wood:2},  baseCost:{gold:5,food:10,stone:5,wood:5,iron:0} },
+  smelter:   { name:'Smelter',    icon:'🔥', desc:'Forge metals. +Iron.',    boosts:{iron:2},  baseCost:{gold:15,food:5,stone:10,wood:10,iron:5} },
+  townhall:  { name:'Town Hall',  icon:'🏛️', desc:'Seat of power. +All.',   boosts:{gold:1,food:1,stone:1,wood:1,iron:1}, baseCost:{gold:50,food:50,stone:50,wood:50,iron:30} },
+  barracks:  { name:'Barracks',   icon:'⚔️', desc:'Train stronger soldiers. +Army HP.',  boosts:{}, baseCost:{gold:30,food:40,stone:20,wood:20,iron:15} },
+  workshop:  { name:'Workshop',   icon:'🔧', desc:'Better walls. +Wall HP.', boosts:{}, baseCost:{gold:20,food:10,stone:30,wood:30,iron:20} },
+};
+
+// Placeable items on the map
+const PLACEABLES = {
+  wall:    { name:'Wall',     icon:'🧱', desc:'Defensive barrier.',        hp:50,  cost:{stone:15,wood:10,iron:0},   type:'structure' },
+  tower:   { name:'Tower',    icon:'🗼', desc:'Fires at nearby enemies.',  hp:80,  cost:{stone:25,wood:15,iron:10},  type:'structure', range:3, dmg:8 },
+  soldier: { name:'Soldier',  icon:'⚔️', desc:'Infantry unit.',           hp:30,  cost:{gold:10,food:15,iron:5},    type:'unit', dmg:12, speed:1 },
+  archer:  { name:'Archer',   icon:'🏹', desc:'Ranged attacker.',         hp:20,  cost:{gold:15,food:10,wood:10},   type:'unit', dmg:10, range:3, speed:1 },
+  knight:  { name:'Knight',   icon:'🐴', desc:'Heavy cavalry.',           hp:60,  cost:{gold:30,food:25,iron:15},   type:'unit', dmg:20, speed:2 },
+  catapult:{ name:'Catapult',  icon:'💥', desc:'Siege weapon. Destroys walls.', hp:40, cost:{wood:30,iron:20,gold:20}, type:'unit', dmg:35, range:4, speed:0.5, siege:true },
+};
+
+// Terrain types
+const T = {
+  EMPTY:0, GRASS:1, FOREST:2, MOUNTAIN:3, WATER:4,
+  // Placed objects stored separately in Firebase
+};
+
+// Terrain colors
+const TERRAIN_COLORS = {
+  [T.EMPTY]:    '#0e1114',
+  [T.GRASS]:    '#1a2618',
+  [T.FOREST]:   '#162a15',
+  [T.MOUNTAIN]: '#2a2a30',
+  [T.WATER]:    '#0f1a2a',
+};
+const TERRAIN_COLORS_LIGHT = {
+  [T.EMPTY]:    '#141820',
+  [T.GRASS]:    '#1f2e1c',
+  [T.FOREST]:   '#1c3218',
+  [T.MOUNTAIN]: '#33333a',
+  [T.WATER]:    '#132240',
+};
+
+// Global events
+const EVENTS = [
+  { id:'harvest',   name:'🌻 Harvest Festival',    desc:'+50% Food',       res:'food',  mult:1.5, dur:300 },
+  { id:'goldrush',  name:'💰 Gold Rush',            desc:'+50% Gold',       res:'gold',  mult:1.5, dur:300 },
+  { id:'quarryboom',name:'🏔️ Quarry Boom',          desc:'+50% Stone',      res:'stone', mult:1.5, dur:240 },
+  { id:'logging',   name:'🪵 Logging Season',       desc:'+60% Wood',       res:'wood',  mult:1.6, dur:240 },
+  { id:'ironage',   name:'⛓️ Iron Age',              desc:'+75% Iron',       res:'iron',  mult:1.75,dur:200 },
+  { id:'prosperity',name:'🌟 Age of Prosperity',    desc:'+30% All',        res:'all',   mult:1.3, dur:360 },
+];
+
+/* ═══════════════════════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════════════════════ */
+let me = null;               // { name }
+let myTeamId = null;
+let teamSnap = null;         // live team data
+let allTeams = {};
+let worldTiles = null;       // Uint8Array MAP_W*MAP_H
+let worldObjects = {};       // key "x,y" => { type, owner, hp, maxHp, team, id }
+let activeEvent = null;
+let listeners = [];
+let tickTimer = null;
+let selectedPlace = null;    // current placement tool
+let pendingPwTeam = null;    // team ID awaiting password
+
+// Map pan/zoom
+let camX = MAP_W/2 * TILE_PX, camY = MAP_H/2 * TILE_PX;
+let zoom = 1;
+let isDragging = false, dragStartX, dragStartY, camStartX, camStartY;
+let spawning = false;
+
+// Canvas refs
+let mapCanvas, mapCtx, mapArea;
+let miniCanvas, miniCtx;
+let animFrame;
+
+/* ═══════════════════════════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+const show = id => $(id).classList.remove('hidden');
+const hide = id => $(id).classList.add('hidden');
+const fmtN = n => n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e4?(n/1e3).toFixed(1)+'K':Math.floor(n).toLocaleString();
+const sKey = s => s.replace(/[.#$\[\]/]/g,'_');
+const escH = s => { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; };
+
+function toast(msg, type='gold') {
+  const el = document.createElement('div');
+  el.className = 'toast-msg ' + type;
+  el.textContent = msg;
+  $('toasts').appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+function showScreen(id) {
+  ['scr-login','scr-teams','scr-game'].forEach(s => {
+    $(s).classList.toggle('hidden', s !== id);
+  });
+}
+
+function hashPw(pw) {
+  // Simple hash for demo — in production use proper auth
+  let h = 0;
+  for (let i = 0; i < pw.length; i++) {
+    h = ((h << 5) - h + pw.charCodeAt(i)) | 0;
+  }
+  return 'h_' + Math.abs(h).toString(36);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TERRAIN GENERATION (seeded procedural)
+   Generates deterministically from coordinates so every client
+   sees the same map without needing to store it.
+   ═══════════════════════════════════════════════════════════════ */
+function seedRand(x, y) {
+  let s = x * 374761393 + y * 668265263 + 1274126177;
+  s = (s ^ (s >> 13)) * 1274126177;
+  s = s ^ (s >> 16);
+  return (s & 0x7fffffff) / 0x7fffffff;
+}
+
+function genTerrain() {
+  worldTiles = new Uint8Array(MAP_W * MAP_H);
+  for (let y = 0; y < MAP_H; y++) {
+    for (let x = 0; x < MAP_W; x++) {
+      const r = seedRand(x, y);
+      const r2 = seedRand(x + 1000, y + 1000);
+      // Edge = water
+      const edgeDist = Math.min(x, y, MAP_W - 1 - x, MAP_H - 1 - y);
+      let tile;
+      if (edgeDist < 3) tile = T.WATER;
+      else if (edgeDist < 6 && r < 0.4) tile = T.WATER;
+      else if (r < 0.08) tile = T.WATER;
+      else if (r < 0.18) tile = T.MOUNTAIN;
+      else if (r < 0.38) tile = T.FOREST;
+      else tile = T.GRASS;
+      worldTiles[y * MAP_W + x] = tile;
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LOGIN
+   ═══════════════════════════════════════════════════════════════ */
+function doLogin() {
+  const name = $('inp-user').value.trim();
+  if (name.length < 2) { $('login-err').textContent='Min 2 characters'; show('login-err'); return; }
+  hide('login-err');
+  me = { name };
+  localStorage.setItem('gic_user', name);
+
+  const saved = localStorage.getItem('gic_team');
+  if (saved) {
+    db.ref('teams/' + saved).once('value').then(s => {
+      if (s.exists()) { joinTeam(saved); }
+      else { localStorage.removeItem('gic_team'); goTeamScreen(); }
+    });
+  } else {
+    goTeamScreen();
+  }
+}
+
+function tryAutoLogin() {
+  const u = localStorage.getItem('gic_user');
+  if (u) { $('inp-user').value = u; doLogin(); }
+}
+$('inp-user').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
+
+/* ═══════════════════════════════════════════════════════════════
+   TEAM SCREEN
+   ═══════════════════════════════════════════════════════════════ */
+function goTeamScreen() {
+  showScreen('scr-teams');
+  $('teams-welcome').textContent = 'Welcome, ' + me.name;
+  loadTeamList();
+}
+
+function loadTeamList() {
+  db.ref('teams').on('value', snap => {
+    const teams = snap.val() || {};
+    const grid = $('team-grid');
+    const ids = Object.keys(teams);
+    if (!ids.length) {
+      grid.innerHTML = '<p style="color:var(--txt-muted);text-align:center;grid-column:1/-1;padding:30px;">No civilizations yet. Be the first!</p>';
+      return;
+    }
+    grid.innerHTML = ids.map(id => {
+      const t = teams[id];
+      const pc = t.players ? Object.keys(t.players).length : 0;
+      const pw = t.passwordHash ? '🔒 ' : '';
+      return `<div class="team-card" onclick="tryJoinTeam('${id}')">
+        <div class="tc-info"><h3>${pw}${escH(t.name)}</h3><span>${pc} player${pc!==1?'s':''} · ⚡${fmtN(calcPower(t))}</span></div>
+        <button class="btn btn-gold btn-xs">Join</button>
+      </div>`;
+    }).join('');
+  });
+}
+
+function doCreateTeam() {
+  const name = $('inp-team-name').value.trim();
+  if (name.length < 2) { toast('Name too short','red'); return; }
+  const pw = $('inp-team-pw').value.trim();
+
+  const id = name.toLowerCase().replace(/[^a-z0-9]/g,'_').substring(0,20) + '_' + Date.now().toString(36);
+  const team = {
+    name,
+    passwordHash: pw ? hashPw(pw) : null,
+    resources: { gold:150, food:150, stone:150, wood:100, iron:50 },
+    buildings: {},
+    players: {},
+    spawnX: -1, spawnY: -1,
+    createdAt: firebase.database.ServerValue.TIMESTAMP,
+    lastTick: firebase.database.ServerValue.TIMESTAMP,
+  };
+  db.ref('teams/' + id).set(team).then(() => {
+    toast('Civilization founded!','green');
+    joinTeam(id);
+  }).catch(e => toast('Error: ' + e.message,'red'));
+}
+
+$('inp-team-name').addEventListener('keydown', e => { if (e.key==='Enter') doCreateTeam(); });
+
+function tryJoinTeam(id) {
+  db.ref('teams/' + id).once('value').then(snap => {
+    const t = snap.val();
+    if (!t) { toast('Civilization not found','red'); return; }
+    if (t.passwordHash) {
+      pendingPwTeam = id;
+      $('inp-join-pw').value = '';
+      show('pw-modal');
+    } else {
+      joinTeam(id);
+    }
+  });
+}
+
+function doJoinWithPassword() {
+  const pw = $('inp-join-pw').value.trim();
+  if (!pw) { toast('Enter password','red'); return; }
+  db.ref('teams/' + pendingPwTeam + '/passwordHash').once('value').then(snap => {
+    if (snap.val() === hashPw(pw)) {
+      hide('pw-modal');
+      joinTeam(pendingPwTeam);
+    } else {
+      toast('Wrong password','red');
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   JOIN / LEAVE TEAM
+   ═══════════════════════════════════════════════════════════════ */
+function joinTeam(teamId) {
+  cleanup();
+  myTeamId = teamId;
+  localStorage.setItem('gic_team', teamId);
+
+  // Register player
+  const pRef = db.ref('teams/' + teamId + '/players/' + sKey(me.name));
+  pRef.set({ name: me.name, joinedAt: firebase.database.ServerValue.TIMESTAMP, lastSeen: firebase.database.ServerValue.TIMESTAMP });
+  pRef.onDisconnect().update({ lastSeen: firebase.database.ServerValue.TIMESTAMP });
+
+  // Heartbeat
+  const hb = setInterval(() => {
+    if (myTeamId === teamId) pRef.update({ lastSeen: firebase.database.ServerValue.TIMESTAMP });
+    else clearInterval(hb);
+  }, 25000);
+
+  // Listen team
+  const tRef = db.ref('teams/' + teamId);
+  tRef.on('value', snap => {
+    if (!snap.exists()) { toast('Civ deleted','red'); doLeave(); return; }
+    const prev = teamSnap;
+    teamSnap = snap.val();
+    teamSnap._id = teamId;
+    if (!prev && teamSnap.lastTick) checkOffline(teamSnap);
+    renderSidebar();
+  });
+  listeners.push({ ref: tRef, ev: 'value' });
+
+  // Listen all teams
+  const aRef = db.ref('teams');
+  aRef.on('value', s => { allTeams = s.val() || {}; });
+  listeners.push({ ref: aRef, ev: 'value' });
+
+  // Listen world objects
+  const oRef = db.ref('worldObjects');
+  oRef.on('value', s => { worldObjects = s.val() || {}; });
+  listeners.push({ ref: oRef, ev: 'value' });
+
+  // Listen global event
+  const eRef = db.ref('globalEvent');
+  eRef.on('value', s => {
+    const ev = s.val();
+    if (ev && ev.endsAt > Date.now()) {
+      const def = EVENTS.find(e => e.id === ev.id);
+      if (def) { activeEvent = {...def, endsAt: ev.endsAt}; show('ev-banner'); renderEvent(); }
+    } else { activeEvent = null; hide('ev-banner'); }
+  });
+  listeners.push({ ref: eRef, ev: 'value' });
+
+  // Listen combat log
+  const cRef = db.ref('combatLog');
+  cRef.orderByChild('ts').limitToLast(30).on('value', s => {
+    const log = s.val();
+    renderCombatLog(log);
+  });
+  listeners.push({ ref: cRef, ev: 'value' });
+
+  genTerrain();
+  initMap();
+  startTick();
+  maybeSpawnEvent();
+
+  // Check if team needs spawn location
+  if (teamSnap && teamSnap.spawnX < 0) {
+    spawning = true;
+    show('spawn-overlay');
+  }
+
+  showScreen('scr-game');
+}
+
+function doLeave() {
+  if (!myTeamId) return;
+  cleanup();
+  db.ref('teams/' + myTeamId + '/players/' + sKey(me.name)).remove();
+  myTeamId = null; teamSnap = null;
+  localStorage.removeItem('gic_team');
+  goTeamScreen();
+}
+
+function cleanup() {
+  listeners.forEach(({ref, ev}) => ref.off(ev));
+  listeners = [];
+  if (tickTimer) clearInterval(tickTimer);
+  if (animFrame) cancelAnimationFrame(animFrame);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESOURCE TICK
+   ═══════════════════════════════════════════════════════════════ */
+function startTick() {
+  if (tickTimer) clearInterval(tickTimer);
+  tickTimer = setInterval(doTick, TICK_MS);
+}
+
+function doTick() {
+  if (!myTeamId || !teamSnap) return;
+  db.ref('teams/' + myTeamId).transaction(d => {
+    if (!d) return d;
+    const now = Date.now();
+    if ((now - (d.lastTick || 0)) < TICK_MS * 0.7) return;
+    const rates = calcRates(d.buildings || {});
+    const elapsed = now - (d.lastTick || now);
+    const ticks = Math.max(1, Math.round(elapsed / TICK_MS));
+    d.resources = d.resources || {};
+    RES_KEYS.forEach(k => { d.resources[k] = (d.resources[k] || 0) + (rates[k] || 0) * ticks; });
+    d.lastTick = now;
+    return d;
+  });
+}
+
+function calcRates(blds) {
+  const b = blds || {};
+  const rates = {};
+  RES_KEYS.forEach(k => { rates[k] = 1; }); // base 1 each
+  Object.entries(BUILDINGS).forEach(([bk, def]) => {
+    const lvl = b[bk] || 0;
+    if (lvl > 0 && def.boosts) {
+      Object.entries(def.boosts).forEach(([rk, amt]) => {
+        rates[rk] = (rates[rk] || 0) + amt * lvl;
+      });
+    }
+  });
+  // Event multiplier
+  if (activeEvent) {
+    RES_KEYS.forEach(k => {
+      if (activeEvent.res === k || activeEvent.res === 'all') rates[k] *= activeEvent.mult;
+    });
+  }
+  RES_KEYS.forEach(k => { rates[k] = Math.round(rates[k] * 100) / 100; });
+  return rates;
+}
+
+function calcPower(t) {
+  if (!t) return 0;
+  const r = t.resources || {};
+  const b = t.buildings || {};
+  let p = 0;
+  RES_KEYS.forEach(k => { p += (r[k] || 0); });
+  Object.keys(b).forEach(k => { p += (b[k] || 0) * 500; });
+  // Count placed objects
+  Object.values(worldObjects).forEach(o => { if (o.team === t._id || o.team === t.name) p += 100; });
+  return Math.floor(p);
+}
+
+function getUpgradeCost(bk, lvl) {
+  const base = BUILDINGS[bk].baseCost;
+  const m = Math.pow(COST_MULT, lvl);
+  const c = {};
+  RES_KEYS.forEach(k => { c[k] = Math.ceil((base[k] || 0) * m); });
+  return c;
+}
+
+function canAfford(cost) {
+  if (!teamSnap || !teamSnap.resources) return false;
+  return RES_KEYS.every(k => (teamSnap.resources[k] || 0) >= (cost[k] || 0));
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BUILDING UPGRADES
+   ═══════════════════════════════════════════════════════════════ */
+function doUpgrade(bk) {
+  db.ref('teams/' + myTeamId).transaction(d => {
+    if (!d) return d;
+    const lvl = (d.buildings && d.buildings[bk]) || 0;
+    const cost = getUpgradeCost(bk, lvl);
+    const r = d.resources || {};
+    if (RES_KEYS.some(k => (r[k] || 0) < (cost[k] || 0))) return;
+    RES_KEYS.forEach(k => { r[k] = (r[k] || 0) - (cost[k] || 0); });
+    d.resources = r;
+    if (!d.buildings) d.buildings = {};
+    d.buildings[bk] = lvl + 1;
+    return d;
+  }, (err, committed) => {
+    if (committed) toast(BUILDINGS[bk].name + ' upgraded!','green');
+    else if (!err) toast('Not enough resources','red');
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MAP RENDERING (Canvas-based for performance)
+   ═══════════════════════════════════════════════════════════════ */
+function initMap() {
+  mapCanvas = $('map-canvas');
+  mapCtx = mapCanvas.getContext('2d');
+  mapArea = $('map-area');
+  miniCanvas = $('minimap-canvas');
+  miniCtx = miniCanvas.getContext('2d');
+
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  // Pan controls
+  mapArea.addEventListener('mousedown', onDragStart);
+  mapArea.addEventListener('mousemove', onDragMove);
+  mapArea.addEventListener('mouseup', onDragEnd);
+  mapArea.addEventListener('mouseleave', onDragEnd);
+  mapArea.addEventListener('wheel', onZoom, { passive: false });
+
+  // Touch
+  mapArea.addEventListener('touchstart', onTouchStart, { passive: false });
+  mapArea.addEventListener('touchmove', onTouchMove, { passive: false });
+  mapArea.addEventListener('touchend', onTouchEnd);
+
+  // Click for placement / spawn
+  mapArea.addEventListener('click', onMapClick);
+  mapArea.addEventListener('mousemove', onMapHover);
+
+  // Center on spawn if exists
+  if (teamSnap && teamSnap.spawnX >= 0) {
+    camX = teamSnap.spawnX * TILE_PX;
+    camY = teamSnap.spawnY * TILE_PX;
+  }
+
+  renderLoop();
+  renderMinimap();
+  setInterval(renderMinimap, 3000);
+}
+
+function resizeCanvas() {
+  const rect = mapArea.getBoundingClientRect();
+  mapCanvas.width = rect.width;
+  mapCanvas.height = rect.height;
+}
+
+function renderLoop() {
+  drawMap();
+  animFrame = requestAnimationFrame(renderLoop);
+}
+
+function drawMap() {
+  const w = mapCanvas.width, h = mapCanvas.height;
+  const ctx = mapCtx;
+  ctx.fillStyle = '#080a0d';
+  ctx.fillRect(0, 0, w, h);
+
+  const tileZ = TILE_PX * zoom;
+  const offX = w / 2 - camX * zoom;
+  const offY = h / 2 - camY * zoom;
+
+  // Visible tile range
+  const x0 = Math.max(0, Math.floor(-offX / tileZ));
+  const y0 = Math.max(0, Math.floor(-offY / tileZ));
+  const x1 = Math.min(MAP_W - 1, Math.ceil((w - offX) / tileZ));
+  const y1 = Math.min(MAP_H - 1, Math.ceil((h - offY) / tileZ));
+
+  // Draw terrain
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      const tile = worldTiles[y * MAP_W + x];
+      const px = x * tileZ + offX;
+      const py = y * tileZ + offY;
+
+      // Checker pattern
+      const alt = (x + y) % 2 === 0;
+      ctx.fillStyle = alt ? TERRAIN_COLORS[tile] : TERRAIN_COLORS_LIGHT[tile];
+      ctx.fillRect(px, py, tileZ + 0.5, tileZ + 0.5);
+
+      // Grid lines (only when zoomed in enough)
+      if (zoom > 0.6) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+        ctx.strokeRect(px, py, tileZ, tileZ);
+      }
+    }
+  }
+
+  // Draw placed objects
+  ctx.font = `${Math.max(10, tileZ * 0.65)}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  Object.entries(worldObjects).forEach(([key, obj]) => {
+    const [ox, oy] = key.split(',').map(Number);
+    if (ox < x0 - 1 || ox > x1 + 1 || oy < y0 - 1 || oy > y1 + 1) return;
+    const px = ox * tileZ + offX + tileZ / 2;
+    const py = oy * tileZ + offY + tileZ / 2;
+
+    // Team color background
+    const isMyTeam = obj.team === myTeamId;
+    const bgColor = isMyTeam ? 'rgba(76,175,106,0.2)' : 'rgba(217,69,69,0.2)';
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(ox * tileZ + offX + 1, oy * tileZ + offY + 1, tileZ - 2, tileZ - 2);
+
+    // Border
+    ctx.strokeStyle = isMyTeam ? 'rgba(76,175,106,0.5)' : 'rgba(217,69,69,0.4)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(ox * tileZ + offX + 1, oy * tileZ + offY + 1, tileZ - 2, tileZ - 2);
+
+    // Icon
+    const def = PLACEABLES[obj.type] || {};
+    ctx.fillText(def.icon || '?', px, py);
+
+    // HP bar
+    if (obj.hp !== undefined && obj.maxHp && obj.hp < obj.maxHp) {
+      const bw = tileZ - 4;
+      const bx = ox * tileZ + offX + 2;
+      const by = oy * tileZ + offY + tileZ - 5;
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(bx, by, bw, 3);
+      ctx.fillStyle = obj.hp / obj.maxHp > 0.5 ? '#4caf6a' : obj.hp / obj.maxHp > 0.25 ? '#d49a3e' : '#d94545';
+      ctx.fillRect(bx, by, bw * (obj.hp / obj.maxHp), 3);
+    }
+  });
+
+  // Draw spawn points
+  Object.entries(allTeams).forEach(([tid, t]) => {
+    if (t.spawnX >= 0 && t.spawnY >= 0) {
+      const sx = t.spawnX, sy = t.spawnY;
+      if (sx < x0 - 2 || sx > x1 + 2 || sy < y0 - 2 || sy > y1 + 2) return;
+      const px = sx * tileZ + offX;
+      const py = sy * tileZ + offY;
+      const isMine = tid === myTeamId;
+      ctx.strokeStyle = isMine ? 'rgba(226,179,80,0.7)' : 'rgba(150,150,180,0.3)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(px - 1, py - 1, tileZ + 2, tileZ + 2);
+      ctx.font = `${Math.max(12, tileZ * 0.7)}px serif`;
+      ctx.fillText('🏛️', px + tileZ / 2, py + tileZ / 2);
+    }
+  });
+
+  // Spawn exclusion zones (when spawning)
+  if (spawning) {
+    Object.values(allTeams).forEach(t => {
+      if (t.spawnX >= 0) {
+        const sx = t.spawnX, sy = t.spawnY;
+        // Draw radius
+        ctx.strokeStyle = 'rgba(217,69,69,0.15)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(sx * tileZ + offX + tileZ/2, sy * tileZ + offY + tileZ/2, SPAWN_MIN_DIST * tileZ, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    });
+  }
+}
+
+function renderMinimap() {
+  if (!worldTiles || !miniCtx) return;
+  const s = 140 / MAP_W; // scale
+  const ctx = miniCtx;
+  ctx.fillStyle = '#080a0d';
+  ctx.fillRect(0, 0, 140, 140);
+
+  // Simplified terrain
+  for (let y = 0; y < MAP_H; y += 2) {
+    for (let x = 0; x < MAP_W; x += 2) {
+      const tile = worldTiles[y * MAP_W + x];
+      ctx.fillStyle = TERRAIN_COLORS_LIGHT[tile];
+      ctx.fillRect(x * s, y * s, s * 2 + 0.5, s * 2 + 0.5);
+    }
+  }
+
+  // Objects
+  Object.entries(worldObjects).forEach(([key, obj]) => {
+    const [ox, oy] = key.split(',').map(Number);
+    ctx.fillStyle = obj.team === myTeamId ? '#4caf6a' : '#d94545';
+    ctx.fillRect(ox * s, oy * s, Math.max(2, s * 2), Math.max(2, s * 2));
+  });
+
+  // Spawns
+  Object.entries(allTeams).forEach(([tid, t]) => {
+    if (t.spawnX >= 0) {
+      ctx.fillStyle = tid === myTeamId ? '#e2b350' : '#8888aa';
+      ctx.fillRect(t.spawnX * s - 1, t.spawnY * s - 1, 4, 4);
+    }
+  });
+
+  // Viewport indicator
+  const w = mapCanvas.width, h = mapCanvas.height;
+  const tileZ = TILE_PX * zoom;
+  const vx = (camX - w / 2 / zoom) * s / TILE_PX;
+  const vy = (camY - h / 2 / zoom) * s / TILE_PX;
+  const vw = (w / tileZ) * s;
+  const vh = (h / tileZ) * s;
+  ctx.strokeStyle = 'rgba(226,179,80,0.6)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(vx, vy, vw, vh);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MAP INTERACTION — PAN, ZOOM, CLICK, HOVER
+   ═══════════════════════════════════════════════════════════════ */
+function onDragStart(e) {
+  if (e.button !== 0) return;
+  isDragging = true;
+  dragStartX = e.clientX; dragStartY = e.clientY;
+  camStartX = camX; camStartY = camY;
+}
+function onDragMove(e) {
+  if (!isDragging) return;
+  const dx = e.clientX - dragStartX;
+  const dy = e.clientY - dragStartY;
+  camX = camStartX - dx / zoom;
+  camY = camStartY - dy / zoom;
+}
+function onDragEnd() { isDragging = false; }
+
+function onZoom(e) {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  zoom = Math.max(0.3, Math.min(3, zoom * delta));
+}
+
+let touchDist = 0;
+function onTouchStart(e) {
+  if (e.touches.length === 1) {
+    isDragging = true;
+    dragStartX = e.touches[0].clientX; dragStartY = e.touches[0].clientY;
+    camStartX = camX; camStartY = camY;
+  } else if (e.touches.length === 2) {
+    isDragging = false;
+    touchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+  }
+  e.preventDefault();
+}
+function onTouchMove(e) {
+  if (e.touches.length === 1 && isDragging) {
+    camX = camStartX - (e.touches[0].clientX - dragStartX) / zoom;
+    camY = camStartY - (e.touches[0].clientY - dragStartY) / zoom;
+  } else if (e.touches.length === 2) {
+    const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    zoom = Math.max(0.3, Math.min(3, zoom * (d / touchDist)));
+    touchDist = d;
+  }
+  e.preventDefault();
+}
+function onTouchEnd() { isDragging = false; }
+
+function screenToTile(cx, cy) {
+  const rect = mapArea.getBoundingClientRect();
+  const tileZ = TILE_PX * zoom;
+  const offX = rect.width / 2 - camX * zoom;
+  const offY = rect.height / 2 - camY * zoom;
+  const tx = Math.floor((cx - rect.left - offX) / tileZ);
+  const ty = Math.floor((cy - rect.top - offY) / tileZ);
+  return { tx, ty };
+}
+
+function onMapClick(e) {
+  // Ignore if we just dragged
+  if (Math.abs(e.clientX - dragStartX) > 5 || Math.abs(e.clientY - dragStartY) > 5) return;
+
+  const { tx, ty } = screenToTile(e.clientX, e.clientY);
+  if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return;
+
+  if (spawning) {
+    handleSpawn(tx, ty);
+    return;
+  }
+
+  if (selectedPlace) {
+    handlePlace(tx, ty);
+    return;
+  }
+
+  // Attack enemy object?
+  const key = tx + ',' + ty;
+  const obj = worldObjects[key];
+  if (obj && obj.team !== myTeamId) {
+    handleAttack(tx, ty, obj);
+  }
+}
+
+function onMapHover(e) {
+  const { tx, ty } = screenToTile(e.clientX, e.clientY);
+  const tip = $('tile-tip');
+
+  if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) { tip.classList.add('hidden'); return; }
+
+  const key = tx + ',' + ty;
+  const obj = worldObjects[key];
+  const tile = worldTiles[ty * MAP_W + tx];
+  const terrName = ['Void','Grassland','Forest','Mountain','Water'][tile] || '?';
+
+  let html = `<div class="tt-title">${terrName} (${tx}, ${ty})</div>`;
+  if (obj) {
+    const def = PLACEABLES[obj.type] || {};
+    const teamName = obj.teamName || obj.team;
+    html += `<div class="tt-info">${def.icon || ''} ${def.name || obj.type}<br>HP: ${obj.hp}/${obj.maxHp}<br>Owner: ${escH(teamName)}</div>`;
+  }
+  if (selectedPlace) {
+    html += `<div style="margin-top:4px;color:var(--gold);font-size:0.72rem;">Click to place ${PLACEABLES[selectedPlace]?.name || ''}</div>`;
+  }
+
+  tip.innerHTML = html;
+  tip.style.left = (e.clientX + 14) + 'px';
+  tip.style.top = (e.clientY + 14) + 'px';
+  tip.classList.remove('hidden');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SPAWN PLACEMENT
+   ═══════════════════════════════════════════════════════════════ */
+function handleSpawn(tx, ty) {
+  // Validate terrain
+  const tile = worldTiles[ty * MAP_W + tx];
+  if (tile === T.WATER || tile === T.MOUNTAIN) {
+    toast('Cannot spawn on water or mountains','red');
+    return;
+  }
+
+  // Check distance from other spawns
+  let tooClose = false;
+  Object.values(allTeams).forEach(t => {
+    if (t.spawnX >= 0) {
+      const d = Math.hypot(tx - t.spawnX, ty - t.spawnY);
+      if (d < SPAWN_MIN_DIST) tooClose = true;
+    }
+  });
+  if (tooClose) {
+    toast('Too close to another civilization! (Min ' + SPAWN_MIN_DIST + ' tiles)','red');
+    return;
+  }
+
+  // Set spawn
+  db.ref('teams/' + myTeamId).update({ spawnX: tx, spawnY: ty });
+  spawning = false;
+  hide('spawn-overlay');
+  camX = tx * TILE_PX;
+  camY = ty * TILE_PX;
+  toast('Town Hall placed! Your civilization begins here.','green');
+}
+
+function cancelSpawn() {
+  spawning = false;
+  hide('spawn-overlay');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   OBJECT PLACEMENT
+   Must be adjacent to an existing friendly structure or spawn
+   ═══════════════════════════════════════════════════════════════ */
+function handlePlace(tx, ty) {
+  if (!selectedPlace || !teamSnap) return;
+
+  const def = PLACEABLES[selectedPlace];
+  if (!def) return;
+
+  // Validate terrain
+  const tile = worldTiles[ty * MAP_W + tx];
+  if (tile === T.WATER) { toast('Cannot place on water','red'); return; }
+  if (tile === T.MOUNTAIN && def.type !== 'structure') { toast('Units cannot go on mountains','red'); return; }
+
+  // Check not occupied
+  const key = tx + ',' + ty;
+  if (worldObjects[key]) { toast('Tile already occupied','red'); return; }
+
+  // Check adjacency (must be next to friendly object or spawn)
+  const sx = teamSnap.spawnX, sy = teamSnap.spawnY;
+  if (sx < 0) { toast('Place your Town Hall first','red'); return; }
+
+  let adjacent = false;
+  // Adjacent to spawn?
+  if (Math.abs(tx - sx) <= 1 && Math.abs(ty - sy) <= 1) adjacent = true;
+
+  // Adjacent to friendly object?
+  if (!adjacent) {
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (dx === 0 && dy === 0) continue;
+        const nk = (tx + dx) + ',' + (ty + dy);
+        const nObj = worldObjects[nk];
+        if (nObj && nObj.team === myTeamId) { adjacent = true; break; }
+      }
+      if (adjacent) break;
+    }
+  }
+
+  if (!adjacent) { toast('Must place adjacent to your structures','red'); return; }
+
+  // Check cost
+  if (!canAfford(def.cost)) { toast('Not enough resources','red'); return; }
+
+  // Bonus HP from upgrades
+  let bonusHp = 0;
+  if (def.type === 'structure') bonusHp = ((teamSnap.buildings || {}).workshop || 0) * 10;
+  if (def.type === 'unit') bonusHp = ((teamSnap.buildings || {}).barracks || 0) * 5;
+  const totalHp = def.hp + bonusHp;
+
+  // Deduct cost & place
+  db.ref('teams/' + myTeamId + '/resources').transaction(r => {
+    if (!r) return r;
+    const cost = def.cost;
+    if (RES_KEYS.some(k => (r[k] || 0) < (cost[k] || 0))) return;
+    RES_KEYS.forEach(k => { if (cost[k]) r[k] -= cost[k]; });
+    return r;
+  }, (err, committed) => {
+    if (committed) {
+      db.ref('worldObjects/' + key).set({
+        type: selectedPlace,
+        team: myTeamId,
+        teamName: teamSnap.name,
+        hp: totalHp,
+        maxHp: totalHp,
+        placedBy: me.name,
+        placedAt: firebase.database.ServerValue.TIMESTAMP,
+      });
+      toast(def.name + ' placed!','green');
+    } else if (!err) {
+      toast('Not enough resources','red');
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   COMBAT — Click enemy objects to attack with nearby units
+   ═══════════════════════════════════════════════════════════════ */
+function handleAttack(tx, ty, targetObj) {
+  if (!myTeamId) return;
+
+  // Find my nearby units that can attack
+  let totalDmg = 0;
+  const attackers = [];
+
+  Object.entries(worldObjects).forEach(([k, obj]) => {
+    if (obj.team !== myTeamId) return;
+    const def = PLACEABLES[obj.type];
+    if (!def || !def.dmg) return;
+    const [ox, oy] = k.split(',').map(Number);
+    const dist = Math.max(Math.abs(ox - tx), Math.abs(oy - ty)); // Chebyshev
+    const range = def.range || 1;
+    if (dist <= range) {
+      totalDmg += def.dmg;
+      attackers.push({ key: k, obj, def, ox, oy });
+    }
+  });
+
+  if (totalDmg === 0) {
+    toast('No units in range to attack','red');
+    return;
+  }
+
+  // Apply damage
+  const targetKey = tx + ',' + ty;
+  const newHp = Math.max(0, (targetObj.hp || 0) - totalDmg);
+
+  if (newHp <= 0) {
+    // Destroy
+    db.ref('worldObjects/' + targetKey).remove();
+    toast('Destroyed enemy ' + (PLACEABLES[targetObj.type]?.name || 'object') + '!','green');
+  } else {
+    db.ref('worldObjects/' + targetKey + '/hp').set(newHp);
+    toast('Attacked for ' + totalDmg + ' damage!','gold');
+  }
+
+  // Log combat
+  db.ref('combatLog').push({
+    atk: teamSnap.name,
+    def: targetObj.teamName || '?',
+    dmg: totalDmg,
+    target: PLACEABLES[targetObj.type]?.name || targetObj.type,
+    destroyed: newHp <= 0,
+    ts: firebase.database.ServerValue.TIMESTAMP,
+  });
+
+  // Counter-attack from defending structures
+  let counterDmg = 0;
+  Object.entries(worldObjects).forEach(([k, obj]) => {
+    if (obj.team === myTeamId) return;
+    if (obj.team !== targetObj.team) return;
+    const def = PLACEABLES[obj.type];
+    if (!def || !def.dmg) return;
+    const [ox, oy] = k.split(',').map(Number);
+    // Check if any of our attackers are in range
+    attackers.forEach(a => {
+      const dist = Math.max(Math.abs(ox - a.ox), Math.abs(oy - a.oy));
+      if (dist <= (def.range || 1)) {
+        counterDmg += Math.floor(def.dmg * 0.5);
+      }
+    });
+  });
+
+  if (counterDmg > 0 && attackers.length > 0) {
+    // Distribute counter damage to first attacker
+    const aKey = attackers[0].key;
+    const aObj = worldObjects[aKey];
+    if (aObj) {
+      const aNewHp = Math.max(0, (aObj.hp || 0) - counterDmg);
+      if (aNewHp <= 0) {
+        db.ref('worldObjects/' + aKey).remove();
+      } else {
+        db.ref('worldObjects/' + aKey + '/hp').set(aNewHp);
+      }
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   COMBAT LOG RENDERING
+   ═══════════════════════════════════════════════════════════════ */
+function renderCombatLog(log) {
+  const el = $('combat-log');
+  if (!log) { el.classList.add('hidden'); return; }
+  el.classList.remove('hidden');
+
+  const entries = Object.values(log).sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 20);
+  el.innerHTML = entries.map(e => {
+    const verb = e.destroyed ? 'destroyed' : 'attacked';
+    return `<div class="cl-entry"><span class="cl-atk">${escH(e.atk)}</span> ${verb} <span class="cl-def">${escH(e.def)}</span>'s ${e.target} for <span class="cl-gold">${e.dmg}</span> dmg</div>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   GLOBAL EVENTS
+   ═══════════════════════════════════════════════════════════════ */
+function maybeSpawnEvent() {
+  db.ref('globalEvent').transaction(ev => {
+    const now = Date.now();
+    if (ev && ev.endsAt > now) return;
+    const last = (ev && ev.endsAt) || 0;
+    const gap = 480000 + Math.random() * 420000; // 8-15 min
+    if (now - last < gap) return;
+    const def = EVENTS[Math.floor(Math.random() * EVENTS.length)];
+    return { id: def.id, endsAt: now + def.dur * 1000, startedAt: now };
+  });
+}
+setInterval(maybeSpawnEvent, 60000);
+
+function renderEvent() {
+  if (!activeEvent) return;
+  $('ev-name').textContent = activeEvent.name;
+  $('ev-desc').textContent = activeEvent.desc;
+}
+
+function updateEventTimer() {
+  if (!activeEvent) return;
+  const rem = Math.max(0, activeEvent.endsAt - Date.now());
+  if (rem <= 0) { activeEvent = null; hide('ev-banner'); return; }
+  $('ev-timer').textContent = Math.floor(rem / 60000) + ':' + String(Math.floor((rem % 60000) / 1000)).padStart(2, '0');
+}
+setInterval(updateEventTimer, 1000);
+
+/* ═══════════════════════════════════════════════════════════════
+   OFFLINE PROGRESS
+   ═══════════════════════════════════════════════════════════════ */
+function checkOffline(data) {
+  const ls = parseInt(localStorage.getItem('gic_lastSeen') || '0');
+  if (!ls) { localStorage.setItem('gic_lastSeen', Date.now().toString()); return; }
+  const now = Date.now();
+  const elapsed = Math.min(now - ls, 86400000);
+  if (elapsed < 60000) { localStorage.setItem('gic_lastSeen', now.toString()); return; }
+
+  const rates = calcRates(data.buildings || {});
+  const ticks = Math.floor(elapsed / TICK_MS);
+  const gains = {};
+  RES_KEYS.forEach(k => { gains[k] = Math.floor((rates[k] || 0) * ticks); });
+
+  db.ref('teams/' + myTeamId + '/resources').transaction(r => {
+    if (!r) return r;
+    RES_KEYS.forEach(k => { r[k] = (r[k] || 0) + gains[k]; });
+    return r;
+  });
+
+  const dur = formatDur(elapsed);
+  $('off-rows').innerHTML = `<p style="color:var(--txt-dim);font-size:0.8rem;">Away: ${dur}</p>` +
+    RES_KEYS.map(k => `<div class="off-row"><span>${RES_ICONS[k]} ${k[0].toUpperCase()+k.slice(1)}</span><span class="ov ${RES_CSS[k]}">+${fmtN(gains[k])}</span></div>`).join('');
+  show('off-modal');
+  localStorage.setItem('gic_lastSeen', now.toString());
+}
+
+function formatDur(ms) {
+  const s = Math.floor(ms/1000);
+  if (s < 60) return s + 's';
+  const m = Math.floor(s/60);
+  if (m < 60) return m + 'min';
+  const h = Math.floor(m/60);
+  return h + 'h ' + (m%60) + 'min';
+}
+
+window.addEventListener('beforeunload', () => localStorage.setItem('gic_lastSeen', Date.now().toString()));
+
+/* ═══════════════════════════════════════════════════════════════
+   SIDEBAR RENDERING
+   ═══════════════════════════════════════════════════════════════ */
+function renderSidebar() {
+  if (!teamSnap) return;
+  const r = teamSnap.resources || {};
+  const b = teamSnap.buildings || {};
+  const rates = calcRates(b);
+  const ps = n => (n / (TICK_MS / 1000)).toFixed(1);
+
+  $('g-civ-name').textContent = teamSnap.name || '—';
+  $('g-player-name').textContent = '👑 ' + me.name;
+
+  // Resources
+  RES_KEYS.forEach(k => {
+    $('r-' + k).textContent = fmtN(r[k] || 0);
+    $('rr-' + k).textContent = '+' + ps(rates[k] || 0) + '/s';
+  });
+
+  // Build tab
+  renderBuildPanel(r, b);
+  renderPlacePanel(r);
+  renderRankPanel();
+  renderTeamPanel();
+}
+
+function renderBuildPanel(res, blds) {
+  const el = $('sp-build');
+  el.innerHTML = Object.entries(BUILDINGS).map(([bk, def]) => {
+    const lvl = blds[bk] || 0;
+    const cost = getUpgradeCost(bk, lvl);
+    const afford = RES_KEYS.every(k => (res[k] || 0) >= (cost[k] || 0));
+    const costHtml = RES_KEYS.filter(k => cost[k] > 0).map(k =>
+      `<span class="cc ${(res[k]||0)<cost[k]?'no':''}">${RES_ICONS[k]}${fmtN(cost[k])}</span>`
+    ).join('');
+
+    let extra = '';
+    if (bk === 'barracks') extra = `<br><em style="color:var(--txt-muted);font-size:0.7rem;">+5 HP per unit per level</em>`;
+    if (bk === 'workshop') extra = `<br><em style="color:var(--txt-muted);font-size:0.7rem;">+10 HP per wall/tower per level</em>`;
+
+    return `<div class="bld-card">
+      <div class="bld-top"><div><span class="bld-icon">${def.icon}</span><span class="bld-name">${def.name}</span></div><div class="bld-lvl">Lv <b>${lvl}</b></div></div>
+      <div class="bld-desc">${def.desc}${extra}</div>
+      <div class="bld-costs">${costHtml}</div>
+      <button class="btn btn-gold btn-xs" style="width:100%" ${afford?'':'disabled'} onclick="doUpgrade('${bk}')">Upgrade → Lv ${lvl+1}</button>
+    </div>`;
+  }).join('');
+}
+
+function renderPlacePanel(res) {
+  const el = $('sp-place');
+  const blds = teamSnap?.buildings || {};
+  el.innerHTML = '<p style="font-size:0.75rem;color:var(--txt-dim);margin-bottom:8px;">Select an item, then click the map to place it adjacent to your structures.</p>' +
+    '<div class="place-grid">' +
+    Object.entries(PLACEABLES).map(([pk, def]) => {
+      const sel = selectedPlace === pk;
+      const costStr = RES_KEYS.filter(k => def.cost[k]).map(k => `${RES_ICONS[k]}${def.cost[k]}`).join(' ');
+      let bonusHp = 0;
+      if (def.type === 'structure') bonusHp = (blds.workshop || 0) * 10;
+      if (def.type === 'unit') bonusHp = (blds.barracks || 0) * 5;
+      const hpStr = bonusHp > 0 ? `${def.hp}+${bonusHp}` : `${def.hp}`;
+      return `<div class="place-btn ${sel?'selected':''}" onclick="selectPlace('${pk}')">
+        <span class="pi">${def.icon}</span>
+        <span class="pn">${def.name}</span>
+        <span class="pc">${costStr}</span>
+        <span class="pc">HP: ${hpStr}${def.dmg?' · DMG:'+def.dmg:''}</span>
+      </div>`;
+    }).join('') + '</div>' +
+    (selectedPlace ? `<button class="btn btn-outline btn-xs" style="width:100%;margin-top:8px;" onclick="selectPlace(null)">Cancel Placement</button>` : '');
+}
+
+function selectPlace(pk) {
+  selectedPlace = selectedPlace === pk ? null : pk;
+  renderPlacePanel(teamSnap?.resources || {});
+}
+
+function renderRankPanel() {
+  const el = $('sp-rank');
+  const teams = Object.entries(allTeams).map(([id, t]) => ({
+    id, name: t.name,
+    players: t.players ? Object.keys(t.players).length : 0,
+    power: calcPower({...t, _id: id})
+  })).sort((a, b) => b.power - a.power);
+
+  if (!teams.length) { el.innerHTML = '<p style="color:var(--txt-muted);text-align:center;padding:20px;">No civs yet.</p>'; return; }
+  el.innerHTML = teams.map((t, i) => {
+    const rk = i + 1;
+    const rc = rk === 1 ? 'r1' : rk === 2 ? 'r2' : rk === 3 ? 'r3' : '';
+    const mine = t.id === myTeamId;
+    return `<div class="lb-row ${mine?'mine':''}"><span class="lb-rank ${rc}">${rk}</span><span class="lb-name">${escH(t.name)} <span style="color:var(--txt-muted);font-size:0.72rem;">(${t.players})</span></span><span class="lb-pow">⚡${fmtN(t.power)}</span></div>`;
+  }).join('');
+}
+
+function renderTeamPanel() {
+  const el = $('sp-team');
+  const players = teamSnap?.players || {};
+  const now = Date.now();
+  const entries = Object.values(players).sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
+  if (!entries.length) { el.innerHTML = '<p style="color:var(--txt-muted);text-align:center;padding:20px;">No players.</p>'; return; }
+  el.innerHTML = '<p style="font-size:0.72rem;color:var(--txt-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;">Team Members</p>' +
+    entries.map(p => {
+      const on = (now - (p.lastSeen || 0)) < 60000;
+      const isMe = p.name === me.name;
+      return `<div class="pl-item"><span class="pl-dot ${on?'on':'off'}"></span><span>${escH(p.name)}${isMe?' (you)':''}</span></div>`;
+    }).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SIDEBAR TAB SWITCHING
+   ═══════════════════════════════════════════════════════════════ */
+function sideTab(t) {
+  document.querySelectorAll('.side-tab').forEach(b => b.classList.toggle('active', b.dataset.t === t));
+  document.querySelectorAll('.side-panel').forEach(p => p.classList.toggle('active', p.id === 'sp-' + t));
+  if (t === 'rank') renderRankPanel();
+  if (t === 'team') renderTeamPanel();
+  if (t === 'place') renderPlacePanel(teamSnap?.resources || {});
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTO-COMBAT TICK — units auto-attack nearby enemies every 5s
+   ═══════════════════════════════════════════════════════════════ */
+setInterval(() => {
+  if (!myTeamId || !teamSnap) return;
+
+  // Find my units
+  const myUnits = [];
+  const enemies = [];
+  Object.entries(worldObjects).forEach(([k, obj]) => {
+    const [x, y] = k.split(',').map(Number);
+    const def = PLACEABLES[obj.type];
+    if (!def) return;
+    if (obj.team === myTeamId && def.dmg) myUnits.push({ k, x, y, obj, def });
+    if (obj.team !== myTeamId) enemies.push({ k, x, y, obj, def });
+  });
+
+  if (!myUnits.length || !enemies.length) return;
+
+  // Each unit attacks nearest enemy in range
+  myUnits.forEach(u => {
+    let nearest = null, nearDist = 999;
+    enemies.forEach(e => {
+      const d = Math.max(Math.abs(u.x - e.x), Math.abs(u.y - e.y));
+      if (d < nearDist && d <= (u.def.range || 1)) {
+        nearest = e;
+        nearDist = d;
+      }
+    });
+    if (!nearest) return;
+
+    const newHp = Math.max(0, (nearest.obj.hp || 0) - u.def.dmg);
+    if (newHp <= 0) {
+      db.ref('worldObjects/' + nearest.k).remove();
+    } else {
+      db.ref('worldObjects/' + nearest.k + '/hp').set(newHp);
+    }
+  });
+}, 5000);
+
+/* ═══════════════════════════════════════════════════════════════
+   UNIT MOVEMENT TICK — units move toward nearest enemy every 4s
+   ═══════════════════════════════════════════════════════════════ */
+setInterval(() => {
+  if (!myTeamId || !teamSnap) return;
+
+  const myUnits = [];
+  const enemies = [];
+  Object.entries(worldObjects).forEach(([k, obj]) => {
+    const [x, y] = k.split(',').map(Number);
+    const def = PLACEABLES[obj.type];
+    if (!def) return;
+    if (obj.team === myTeamId && def.speed) myUnits.push({ k, x, y, obj, def });
+    if (obj.team !== myTeamId) enemies.push({ k, x, y, obj, def });
+  });
+
+  if (!myUnits.length || !enemies.length) return;
+
+  myUnits.forEach(u => {
+    // Already in range of something? Don't move
+    const inRange = enemies.some(e => Math.max(Math.abs(u.x - e.x), Math.abs(u.y - e.y)) <= (u.def.range || 1));
+    if (inRange) return;
+
+    // Find nearest enemy
+    let nearest = null, nearDist = 999;
+    enemies.forEach(e => {
+      const d = Math.hypot(u.x - e.x, u.y - e.y);
+      if (d < nearDist) { nearest = e; nearDist = d; }
+    });
+    if (!nearest) return;
+
+    // Move one step toward
+    const dx = Math.sign(nearest.x - u.x);
+    const dy = Math.sign(nearest.y - u.y);
+    const nx = u.x + dx, ny = u.y + dy;
+    const nk = nx + ',' + ny;
+
+    // Check passable
+    if (nx < 0 || ny < 0 || nx >= MAP_W || ny >= MAP_H) return;
+    if (worldTiles[ny * MAP_W + nx] === T.WATER) return;
+    if (worldObjects[nk]) return;
+
+    // Must stay adjacent to friendly territory
+    let adjFriendly = false;
+    for (let ddy = -1; ddy <= 1; ddy++) {
+      for (let ddx = -1; ddx <= 1; ddx++) {
+        if (ddx === 0 && ddy === 0) continue;
+        const ck = (nx+ddx) + ',' + (ny+ddy);
+        if (worldObjects[ck]?.team === myTeamId) adjFriendly = true;
+        if (teamSnap.spawnX === nx+ddx && teamSnap.spawnY === ny+ddy) adjFriendly = true;
+      }
+    }
+    // Also ok if the old position still links back
+    if (!adjFriendly) return;
+
+    // Move
+    const objCopy = { ...u.obj };
+    db.ref('worldObjects/' + u.k).remove();
+    db.ref('worldObjects/' + nk).set(objCopy);
+  });
+}, 4000);
+
+/* ═══════════════════════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════════════════════ */
+genTerrain();
+tryAutoLogin();
+</script>
+</body>
+</html>
