@@ -2,2024 +2,578 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Global Idle Civilization</title>
-
-<!-- Firebase SDK v9 compat -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-
-<!-- Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Almendra:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
 <style>
-/* ═══════════════════════════════════════════════════════════════
-   ROOT THEME — Dark fantasy cartography aesthetic
-   ═══════════════════════════════════════════════════════════════ */
-:root {
-  --bg:         #0b0d0e;
-  --bg-raised:  #12161a;
-  --bg-card:    #181d23;
-  --bg-card-h:  #1e252d;
-  --bg-input:   #141920;
-  --border:     #2a3140;
-  --border-lt:  #3a4558;
-  --gold:       #e2b350;
-  --gold-dim:   #a8832e;
-  --gold-glow:  rgba(226,179,80,0.25);
-  --amber:      #d49a3e;
-  --red:        #d94545;
-  --red-dim:    #8c2e2e;
-  --green:      #4caf6a;
-  --green-dim:  #2d7a42;
-  --blue:       #4a90d9;
-  --blue-dim:   #2d5a8c;
-  --stone-c:    #8a9bb0;
-  --food-c:     #7ec87e;
-  --wood-c:     #c49a6c;
-  --iron-c:     #a0b0c0;
-  --txt:        #d5dce6;
-  --txt-dim:    #7d8a9a;
-  --txt-muted:  #4a5568;
-  --panel-blur: blur(12px);
-  --r:          6px;
-  --r-lg:       12px;
-  --shadow:     0 4px 24px rgba(0,0,0,0.5);
-  --font-title: 'Almendra', serif;
-  --font-body:  'Outfit', sans-serif;
-  /* Map tile size */
-  --tile:       28px;
-}
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-size: 14px; }
-body {
-  font-family: var(--font-body);
-  background: var(--bg);
-  color: var(--txt);
-  overflow: hidden;
-  height: 100vh;
-  width: 100vw;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-/* Ambient background */
-body::before {
-  content: '';
-  position: fixed; inset: 0;
-  background:
-    radial-gradient(ellipse at 15% 10%, rgba(226,179,80,0.03) 0%, transparent 50%),
-    radial-gradient(ellipse at 85% 90%, rgba(74,144,217,0.03) 0%, transparent 50%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-.hidden { display: none !important; }
-
-/* ═══════ TYPOGRAPHY ═══════ */
-h1,h2,h3,h4 { font-family: var(--font-title); color: var(--gold); }
-
-/* ═══════ INPUTS ═══════ */
-input[type="text"], input[type="password"] {
-  font-family: var(--font-body);
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  color: var(--txt);
-  padding: 10px 14px;
-  border-radius: var(--r);
-  font-size: 0.95rem;
-  outline: none;
-  transition: border-color 0.2s;
-  width: 100%;
-}
-input:focus { border-color: var(--gold-dim); }
-input::placeholder { color: var(--txt-muted); }
-
-/* ═══════ BUTTONS ═══════ */
-.btn {
-  font-family: var(--font-title);
-  font-weight: 700;
-  font-size: 0.85rem;
-  letter-spacing: 0.05em;
-  padding: 10px 20px;
-  border: none;
-  border-radius: var(--r);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.btn:active { transform: scale(0.97); }
-.btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
-
-.btn-gold {
-  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dim) 100%);
-  color: #181d23;
-}
-.btn-gold:hover:not(:disabled) { filter: brightness(1.12); }
-
-.btn-outline {
-  background: transparent;
-  border: 1px solid var(--border-lt);
-  color: var(--txt-dim);
-}
-.btn-outline:hover { border-color: var(--gold-dim); color: var(--gold); }
-
-.btn-red { background: var(--red-dim); color: #faa; border: 1px solid rgba(217,69,69,0.3); }
-.btn-red:hover { background: var(--red); color: #fff; }
-
-.btn-sm { padding: 7px 14px; font-size: 0.78rem; }
-.btn-xs { padding: 5px 10px; font-size: 0.72rem; }
-
-/* ═══════ TOAST ═══════ */
-.toast-box { position: fixed; top: 12px; right: 12px; z-index: 9999; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
-.toast-msg {
-  background: var(--bg-card);
-  border: 1px solid var(--border-lt);
-  border-radius: var(--r);
-  padding: 10px 16px;
-  font-size: 0.82rem;
-  box-shadow: var(--shadow);
-  animation: tIn 0.25s ease-out, tOut 0.25s 2.6s ease-in forwards;
-  pointer-events: auto;
-  max-width: 300px;
-}
-.toast-msg.gold { border-left: 3px solid var(--gold); }
-.toast-msg.red { border-left: 3px solid var(--red); }
-.toast-msg.green { border-left: 3px solid var(--green); }
-@keyframes tIn { from { opacity:0; transform:translateX(30px); } }
-@keyframes tOut { to { opacity:0; transform:translateX(30px); } }
-
-/* ═══════════════════════════════════════════════════════════════
-   SCREEN: LOGIN
-   ═══════════════════════════════════════════════════════════════ */
-.screen-login {
-  position: fixed; inset: 0; z-index: 100;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--bg);
-  flex-direction: column; gap: 24px;
-  padding: 24px;
-}
-
-.login-brand {
-  text-align: center;
-  animation: fadeUp 0.6s ease-out;
-}
-@keyframes fadeUp { from { opacity:0; transform:translateY(20px); } }
-
-.login-emblem {
-  width: 80px; height: 80px;
-  margin: 0 auto 16px;
-  border: 2px solid var(--gold-dim);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 2.2rem;
-  background: radial-gradient(circle, var(--gold-glow) 0%, transparent 70%);
-  animation: pulse 3s ease-in-out infinite;
-}
-@keyframes pulse {
-  0%,100% { box-shadow: 0 0 15px rgba(226,179,80,0.1); }
-  50% { box-shadow: 0 0 30px rgba(226,179,80,0.3); }
-}
-
-.login-brand h1 { font-size: 2rem; line-height: 1.1; margin-bottom: 6px; }
-.login-brand p { color: var(--txt-dim); font-size: 0.88rem; }
-
-.login-form {
-  display: flex; flex-direction: column; gap: 10px;
-  width: 100%; max-width: 320px;
-  animation: fadeUp 0.6s 0.15s ease-out both;
-}
-
-.login-err { color: var(--red); font-size: 0.82rem; text-align: center; }
-
-/* ═══════════════════════════════════════════════════════════════
-   SCREEN: TEAM SELECT
-   ═══════════════════════════════════════════════════════════════ */
-.screen-teams {
-  position: fixed; inset: 0; z-index: 100;
-  background: var(--bg);
-  display: flex; flex-direction: column;
-  padding: 20px;
-  overflow-y: auto;
-}
-
-.teams-head { text-align: center; margin-bottom: 16px; }
-.teams-head h1 { font-size: 1.6rem; }
-.teams-head p { color: var(--txt-dim); font-size: 0.88rem; margin-top: 4px; }
-
-.create-box {
-  background: var(--bg-card);
-  border: 1px dashed var(--border-lt);
-  border-radius: var(--r-lg);
-  padding: 16px;
-  display: flex; flex-direction: column; gap: 8px;
-  margin-bottom: 16px;
-  max-width: 500px;
-  margin-left: auto; margin-right: auto;
-  width: 100%;
-}
-.create-box .row { display: flex; gap: 8px; }
-.create-box .row input { flex: 1; }
-.create-box label { font-size: 0.78rem; color: var(--txt-muted); }
-
-.team-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 10px;
-  max-width: 800px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-.team-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  padding: 14px 16px;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex; justify-content: space-between; align-items: center;
-}
-.team-card:hover { border-color: var(--gold-dim); background: var(--bg-card-h); }
-.tc-info h3 { font-size: 0.95rem; margin-bottom: 2px; }
-.tc-info span { font-size: 0.8rem; color: var(--txt-dim); }
-.tc-lock { color: var(--gold-dim); font-size: 1rem; }
-
-/* Password prompt modal */
-.pw-modal {
-  position: fixed; inset: 0; z-index: 200;
-  background: rgba(0,0,0,0.7);
-  display: flex; align-items: center; justify-content: center;
-  padding: 20px;
-}
-.pw-box {
-  background: var(--bg-raised);
-  border: 1px solid var(--border-lt);
-  border-radius: var(--r-lg);
-  padding: 24px;
-  max-width: 340px;
-  width: 100%;
-  text-align: center;
-}
-.pw-box h3 { margin-bottom: 12px; font-size: 1.1rem; }
-.pw-box input { margin-bottom: 10px; }
-.pw-box .btn { width: 100%; }
-
-/* ═══════════════════════════════════════════════════════════════
-   MAIN GAME LAYOUT
-   ═══════════════════════════════════════════════════════════════ */
-.game-wrap {
-  position: fixed; inset: 0; z-index: 10;
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  grid-template-rows: 1fr;
-}
-
-/* ═══════ LEFT SIDEBAR ═══════ */
-.sidebar {
-  background: var(--bg-raised);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  z-index: 20;
-}
-
-.side-head {
-  padding: 14px 16px 10px;
-  border-bottom: 1px solid var(--border);
-}
-.side-head h2 { font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.side-head .sub { font-size: 0.78rem; color: var(--txt-dim); margin-top: 2px; }
-
-/* Resources strip */
-.res-strip {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
-}
-.res-pill {
-  background: var(--bg-card);
-  border-radius: var(--r);
-  padding: 6px 8px;
-  text-align: center;
-  font-size: 0.78rem;
-}
-.res-pill .rv { font-weight: 700; font-size: 0.92rem; font-variant-numeric: tabular-nums; display: block; }
-.res-pill .rr { color: var(--txt-muted); font-size: 0.68rem; }
-.res-pill.c-gold .rv { color: var(--gold); }
-.res-pill.c-food .rv { color: var(--food-c); }
-.res-pill.c-stone .rv { color: var(--stone-c); }
-.res-pill.c-wood .rv { color: var(--wood-c); }
-.res-pill.c-iron .rv { color: var(--iron-c); }
-
-/* Sidebar tabs */
-.side-tabs {
-  display: flex;
-  border-bottom: 1px solid var(--border);
-}
-.side-tab {
-  flex: 1;
-  background: none; border: none;
-  color: var(--txt-muted);
-  font-family: var(--font-body);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 9px 6px;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: all 0.15s;
-}
-.side-tab:hover { color: var(--txt-dim); }
-.side-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
-
-.side-panel {
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px 12px;
-  display: none;
-}
-.side-panel.active { display: block; }
-
-/* Building cards in sidebar */
-.bld-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 10px 12px;
-  margin-bottom: 8px;
-  transition: border-color 0.15s;
-}
-.bld-card:hover { border-color: var(--border-lt); }
-.bld-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-.bld-icon { font-size: 1.2rem; margin-right: 6px; }
-.bld-name { font-family: var(--font-title); font-size: 0.88rem; color: var(--txt); }
-.bld-lvl { font-size: 0.72rem; color: var(--txt-muted); }
-.bld-lvl b { color: var(--gold); font-size: 0.88rem; }
-.bld-desc { font-size: 0.75rem; color: var(--txt-dim); margin-bottom: 8px; line-height: 1.35; }
-.bld-costs { display: flex; gap: 8px; flex-wrap: wrap; font-size: 0.75rem; color: var(--txt-dim); margin-bottom: 8px; }
-.bld-costs .cc { display: flex; align-items: center; gap: 3px; }
-.cc.no { color: var(--red); }
-
-/* Placement items in sidebar */
-.place-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
-}
-.place-btn {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 10px 8px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.15s;
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-}
-.place-btn:hover { border-color: var(--gold-dim); background: var(--bg-card-h); }
-.place-btn.selected { border-color: var(--gold); background: rgba(226,179,80,0.08); box-shadow: 0 0 10px var(--gold-glow); }
-.place-btn .pi { font-size: 1.3rem; }
-.place-btn .pn { font-size: 0.72rem; font-weight: 600; }
-.place-btn .pc { font-size: 0.68rem; color: var(--txt-muted); }
-
-/* Leaderboard */
-.lb-row {
-  display: flex;
-  align-items: center;
-  padding: 8px 10px;
-  border-radius: var(--r);
-  margin-bottom: 4px;
-  font-size: 0.82rem;
-}
-.lb-row:nth-child(odd) { background: var(--bg-card); }
-.lb-rank { width: 24px; font-family: var(--font-title); font-weight: 700; color: var(--txt-muted); }
-.lb-rank.r1 { color: var(--gold); }
-.lb-rank.r2 { color: #c0c0c0; }
-.lb-rank.r3 { color: #cd7f32; }
-.lb-name { flex: 1; margin-left: 6px; }
-.lb-pow { color: var(--gold-dim); font-weight: 600; }
-.lb-row.mine { background: rgba(226,179,80,0.06); }
-.lb-row.mine .lb-name { color: var(--gold); font-weight: 600; }
-
-/* Player list */
-.pl-item {
-  display: flex; align-items: center; gap: 8px;
-  padding: 7px 10px;
-  border-radius: var(--r);
-  margin-bottom: 3px;
-  font-size: 0.82rem;
-}
-.pl-item:nth-child(odd) { background: var(--bg-card); }
-.pl-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.pl-dot.on { background: var(--green); box-shadow: 0 0 6px rgba(76,175,106,0.5); }
-.pl-dot.off { background: var(--txt-muted); }
-
-/* Footer actions */
-.side-foot {
-  padding: 10px 12px;
-  border-top: 1px solid var(--border);
-  display: flex; gap: 6px;
-}
-.side-foot .btn { flex: 1; font-size: 0.72rem; }
-
-/* ═══════ EVENT BANNER (floats over map) ═══════ */
-.event-float {
-  position: absolute;
-  top: 12px; left: 50%;
-  transform: translateX(-50%);
-  z-index: 30;
-  background: rgba(18,22,26,0.9);
-  backdrop-filter: var(--panel-blur);
-  border: 1px solid rgba(226,179,80,0.3);
-  border-radius: var(--r-lg);
-  padding: 10px 20px;
-  display: flex; align-items: center; gap: 14px;
-  animation: bannerIn 0.4s ease-out;
-  white-space: nowrap;
-}
-@keyframes bannerIn { from { opacity: 0; transform: translateX(-50%) translateY(-20px); } }
-.ev-text { font-size: 0.85rem; }
-.ev-text strong { color: var(--gold); font-family: var(--font-title); }
-.ev-timer { color: var(--gold); font-weight: 700; font-variant-numeric: tabular-nums; }
-
-/* ═══════════════════════════════════════════════════════════════
-   MAP AREA
-   ═══════════════════════════════════════════════════════════════ */
-.map-area {
-  position: relative;
-  overflow: hidden;
-  background: #0a0c0e;
-  cursor: crosshair;
-}
-
-.map-viewport {
-  position: absolute;
-  /* sized dynamically via JS */
-}
-
-/* Tile rendering via canvas for performance */
-#map-canvas {
-  display: block;
-  image-rendering: pixelated;
-}
-
-/* Selection & hover tooltip */
-.tile-tooltip {
-  position: fixed;
-  z-index: 50;
-  background: rgba(18,22,26,0.95);
-  backdrop-filter: var(--panel-blur);
-  border: 1px solid var(--border-lt);
-  border-radius: var(--r);
-  padding: 8px 12px;
-  font-size: 0.78rem;
-  pointer-events: none;
-  max-width: 200px;
-  box-shadow: var(--shadow);
-}
-.tt-title { font-family: var(--font-title); color: var(--gold); font-size: 0.85rem; margin-bottom: 3px; }
-.tt-info { color: var(--txt-dim); }
-
-/* ═══════ MINI-MAP ═══════ */
-.minimap-wrap {
-  position: absolute;
-  bottom: 12px; right: 12px;
-  z-index: 30;
-  background: rgba(18,22,26,0.85);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  overflow: hidden;
-}
-#minimap-canvas { display: block; }
-
-/* ═══════ SPAWN PICKER ═══════ */
-.spawn-overlay {
-  position: absolute; inset: 0;
-  z-index: 40;
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(0,0,0,0.5);
-}
-.spawn-msg {
-  background: rgba(18,22,26,0.95);
-  border: 1px solid var(--gold-dim);
-  border-radius: var(--r-lg);
-  padding: 20px 28px;
-  text-align: center;
-  max-width: 380px;
-}
-.spawn-msg h2 { font-size: 1.2rem; margin-bottom: 6px; }
-.spawn-msg p { color: var(--txt-dim); font-size: 0.85rem; margin-bottom: 10px; }
-
-/* ═══════ COMBAT LOG ═══════ */
-.combat-log {
-  position: absolute;
-  bottom: 12px; left: 12px;
-  z-index: 30;
-  background: rgba(18,22,26,0.85);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  width: 280px;
-  max-height: 150px;
-  overflow-y: auto;
-  padding: 6px 8px;
-  font-size: 0.72rem;
-  color: var(--txt-dim);
-  line-height: 1.5;
-}
-.combat-log .cl-entry { padding: 2px 0; border-bottom: 1px solid rgba(42,49,64,0.3); }
-.cl-atk { color: var(--red); }
-.cl-def { color: var(--blue); }
-.cl-gold { color: var(--gold); }
-
-/* ═══════ OFFLINE MODAL ═══════ */
-.modal-overlay {
-  position: fixed; inset: 0; z-index: 300;
-  background: rgba(0,0,0,0.7);
-  display: flex; align-items: center; justify-content: center;
-  padding: 20px;
-}
-.modal {
-  background: var(--bg-raised);
-  border: 1px solid var(--border-lt);
-  border-radius: var(--r-lg);
-  padding: 24px;
-  max-width: 380px; width: 100%;
-  text-align: center;
-}
-.modal h2 { margin-bottom: 10px; }
-.modal p { color: var(--txt-dim); font-size: 0.85rem; }
-.off-rows { margin: 14px 0 18px; display: flex; flex-direction: column; gap: 6px; }
-.off-row {
-  display: flex; justify-content: space-between;
-  background: var(--bg-card);
-  border-radius: var(--r);
-  padding: 7px 12px;
-  font-size: 0.85rem;
-}
-.off-row .ov { font-weight: 700; }
-.ov.cg { color: var(--gold); }
-.ov.cf { color: var(--food-c); }
-.ov.cs { color: var(--stone-c); }
-.ov.cw { color: var(--wood-c); }
-.ov.ci { color: var(--iron-c); }
-
-/* ═══════ MOBILE: sidebar becomes bottom sheet ═══════ */
-@media (max-width: 768px) {
-  .game-wrap {
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr auto;
-  }
-  .sidebar {
-    border-right: none;
-    border-top: 1px solid var(--border);
-    max-height: 45vh;
-    order: 2;
-  }
-  .map-area { order: 1; }
-  .combat-log { bottom: auto; top: 12px; left: 12px; }
-  .res-strip { grid-template-columns: repeat(5, 1fr); }
-}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0b0d0e;--bg2:#12161a;--bg3:#181d23;--bg3h:#1e252d;--brd:#2a3140;--brdl:#3a4558;--gold:#e2b350;--goldd:#a8832e;--red:#d94545;--grn:#4caf6a;--blu:#4a90d9;--txt:#d5dce6;--txtd:#7d8a9a;--txtm:#4a5568;--r:6px;--rl:12px;--ft:'Almendra',serif;--fb:'Outfit',sans-serif}
+html{font-size:14px}body{font-family:var(--fb);background:var(--bg);color:var(--txt);overflow:hidden;height:100vh;width:100vw;user-select:none}
+.hidden{display:none!important}h1,h2,h3{font-family:var(--ft);color:var(--gold)}
+input[type="text"],input[type="password"]{font-family:var(--fb);background:#141920;border:1px solid var(--brd);color:var(--txt);padding:10px 14px;border-radius:var(--r);font-size:.95rem;outline:none;width:100%}
+input:focus{border-color:var(--goldd)}input::placeholder{color:var(--txtm)}
+select{font-family:var(--fb);background:#141920;border:1px solid var(--brd);color:var(--txt);padding:8px;border-radius:var(--r);font-size:.85rem;outline:none;width:100%}
+.btn{font-family:var(--ft);font-weight:700;font-size:.85rem;padding:10px 20px;border:none;border-radius:var(--r);cursor:pointer;transition:all .15s}.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--goldd));color:#181d23}.btn-outline{background:transparent;border:1px solid var(--brdl);color:var(--txtd)}
+.btn-sm{padding:7px 14px;font-size:.78rem}.btn-xs{padding:5px 10px;font-size:.72rem}
+#toasts{position:fixed;top:12px;right:12px;z-index:9999;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.toast{background:var(--bg3);border:1px solid var(--brdl);border-radius:var(--r);padding:10px 16px;font-size:.82rem;box-shadow:0 4px 24px rgba(0,0,0,.5);animation:tIn .25s,tOut .25s 2.6s forwards;max-width:300px}
+.toast.gold{border-left:3px solid var(--gold)}.toast.red{border-left:3px solid var(--red)}.toast.green{border-left:3px solid var(--grn)}
+@keyframes tIn{from{opacity:0;transform:translateX(30px)}}@keyframes tOut{to{opacity:0;transform:translateX(30px)}}
+/* Screens */
+.scr{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:20px}
+.scr.teams{justify-content:flex-start;padding-top:20px;overflow-y:auto}
+.brand{text-align:center}.brand h1{font-size:2rem;line-height:1.1;margin-bottom:6px}.brand p{color:var(--txtd);font-size:.88rem}
+.emblem{width:72px;height:72px;margin:0 auto 12px;border:2px solid var(--goldd);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2rem;background:radial-gradient(circle,rgba(226,179,80,.25),transparent 70%)}
+.lform{display:flex;flex-direction:column;gap:10px;width:100%;max-width:320px}
+.cbox{background:var(--bg3);border:1px dashed var(--brdl);border-radius:var(--rl);padding:14px;display:flex;flex-direction:column;gap:7px;max-width:500px;width:100%;margin-bottom:14px}
+.cbox .row{display:flex;gap:7px}.cbox .row input,.cbox .row select{flex:1}.cbox label{font-size:.75rem;color:var(--txtm)}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;max-width:800px;width:100%}
+.tcard{background:var(--bg3);border:1px solid var(--brd);border-radius:var(--rl);padding:12px 14px;cursor:pointer;transition:all .2s;display:flex;justify-content:space-between;align-items:center}
+.tcard:hover{border-color:var(--goldd);background:var(--bg3h)}
+.tcard h3{font-size:.9rem;margin-bottom:2px;font-family:var(--ft);color:var(--gold)}.tcard span{font-size:.75rem;color:var(--txtd)}
+.pwmod{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px}
+.pwbox{background:var(--bg2);border:1px solid var(--brdl);border-radius:var(--rl);padding:20px;max-width:320px;width:100%;text-align:center}
+.pwbox h3{margin-bottom:10px;font-family:var(--ft);color:var(--gold)}.pwbox input{margin-bottom:8px}.pwbox .btn{width:100%}
+/* Game */
+.game{position:fixed;inset:0;z-index:10;display:grid;grid-template-columns:250px 1fr;grid-template-rows:1fr}
+.sb{background:var(--bg2);border-right:1px solid var(--brd);display:flex;flex-direction:column;overflow:hidden;z-index:20}
+.sb-h{padding:8px 10px 5px;border-bottom:1px solid var(--brd)}.sb-h h2{font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sb-h .sub{font-size:.68rem;color:var(--txtd);margin-top:1px}
+.rstrip{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;padding:4px 6px;border-bottom:1px solid var(--brd)}
+.rpill{background:var(--bg3);border-radius:3px;padding:3px 2px;text-align:center;font-size:.55rem}
+.rpill .rv{font-weight:700;font-size:.7rem;display:block}.rpill .rr{color:var(--txtm);font-size:.48rem}
+.rpill.cg .rv{color:var(--gold)}.rpill.cf .rv{color:#7ec87e}.rpill.cs .rv{color:#8a9bb0}.rpill.cw .rv{color:#c49a6c}.rpill.ci .rv{color:#a0b0c0}
+.stabs{display:flex;border-bottom:1px solid var(--brd)}
+.stab{flex:1;background:none;border:none;color:var(--txtm);font-family:var(--fb);font-size:.56rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;padding:6px 2px;cursor:pointer;border-bottom:2px solid transparent}
+.stab:hover{color:var(--txtd)}.stab.on{color:var(--gold);border-bottom-color:var(--gold)}
+.spnl{flex:1;overflow-y:auto;padding:5px 7px;display:none}.spnl.on{display:block}
+.bc{background:var(--bg3);border:1px solid var(--brd);border-radius:var(--r);padding:6px 7px;margin-bottom:4px}
+.bc-t{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+.bc-n{font-family:var(--ft);font-size:.78rem;color:var(--txt)}.bc-l{font-size:.62rem;color:var(--txtm)}.bc-l b{color:var(--gold);font-size:.78rem}
+.bc-d{font-size:.62rem;color:var(--txtd);margin-bottom:3px}.bc-c{display:flex;gap:4px;flex-wrap:wrap;font-size:.58rem;color:var(--txtd);margin-bottom:3px}.cc{display:flex;align-items:center;gap:1px}.cc.no{color:var(--red)}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
+.pbtn{background:var(--bg3);border:1px solid var(--brd);border-radius:var(--r);padding:4px 2px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px}
+.pbtn:hover{border-color:var(--goldd)}.pbtn.sel{border-color:var(--gold);background:rgba(226,179,80,.08)}
+.pbtn canvas{width:22px;height:22px}.pbtn .pn{font-size:.56rem;font-weight:600}.pbtn .pc{font-size:.48rem;color:var(--txtm)}
+.sfoot{padding:5px 7px;border-top:1px solid var(--brd)}.sfoot .btn{width:100%;font-size:.62rem}
+/* Map */
+.mapa{position:relative;overflow:hidden;background:#1a3050}
+.mapa canvas{position:absolute;top:0;left:0}
+.selbox{position:absolute;border:1px solid rgba(100,180,255,.7);background:rgba(100,180,255,.1);pointer-events:none;z-index:25}
+.modebar{position:absolute;top:8px;left:8px;z-index:35;border-radius:var(--r);padding:5px 10px;font-size:.7rem;font-weight:600;color:#fff;display:flex;align-items:center;gap:5px}
+.modebar.cat{background:rgba(217,69,69,.9)}.modebar.ord{background:rgba(74,144,217,.9)}.modebar.sel{background:rgba(76,175,106,.85)}
+.modebar .btn{padding:2px 6px;font-size:.58rem;background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3)}
+.evfloat{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:30;background:rgba(18,22,26,.92);border:1px solid rgba(226,179,80,.3);border-radius:var(--rl);padding:5px 12px;display:flex;align-items:center;gap:8px;white-space:nowrap;font-size:.72rem}
+.evfloat strong{color:var(--gold);font-family:var(--ft)}.evtimer{color:var(--gold);font-weight:700}
+.ttip{position:fixed;z-index:50;background:rgba(18,22,26,.95);border:1px solid var(--brdl);border-radius:var(--r);padding:4px 7px;font-size:.65rem;pointer-events:none;max-width:190px}
+.ttip .ttt{font-family:var(--ft);color:var(--gold);font-size:.72rem;margin-bottom:1px}.ttip .tti{color:var(--txtd)}
+.mmwrap{position:absolute;bottom:8px;right:8px;z-index:30;background:rgba(18,22,26,.85);border:1px solid var(--brd);border-radius:var(--r);overflow:hidden}
+.spov{position:absolute;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5)}
+.spmsg{background:rgba(18,22,26,.95);border:1px solid var(--goldd);border-radius:var(--rl);padding:16px 22px;text-align:center;max-width:340px}
+.spmsg h2{font-size:1rem;margin-bottom:4px}.spmsg p{color:var(--txtd);font-size:.78rem;margin-bottom:6px}
+.clog{position:absolute;bottom:8px;left:8px;z-index:30;background:rgba(18,22,26,.85);border:1px solid var(--brd);border-radius:var(--r);width:220px;max-height:100px;overflow-y:auto;padding:3px 4px;font-size:.58rem;color:var(--txtd);line-height:1.25}
+/* Tracker compass */
+.tracker{position:absolute;top:40px;right:8px;z-index:30;background:rgba(18,22,26,.9);border:1px solid var(--brd);border-radius:var(--r);padding:6px 8px;font-size:.65rem;color:var(--txtd)}
+.tracker select{font-size:.65rem;padding:3px;margin-bottom:4px}
+.tracker .arrow{font-size:1.2rem;display:block;text-align:center}
+.modov{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px}
+.mod{background:var(--bg2);border:1px solid var(--brdl);border-radius:var(--rl);padding:18px;max-width:340px;width:100%;text-align:center}.mod h2{margin-bottom:6px;font-family:var(--ft);color:var(--gold)}.mod p{color:var(--txtd);font-size:.78rem}
+.deathscr{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center}
+.deathscr h1{color:var(--red);font-size:2rem;font-family:var(--ft)}.deathscr p{color:var(--txtd)}
+@media(max-width:768px){.game{grid-template-columns:1fr;grid-template-rows:1fr auto}.sb{border-right:none;border-top:1px solid var(--brd);max-height:38vh;order:2}.mapa{order:1}}
 </style>
 </head>
 <body>
+<div id="toasts"></div>
 
-<!-- TOASTS -->
-<div class="toast-box" id="toasts"></div>
+<!-- LOGIN -->
+<div class="scr" id="S1"><div class="brand"><div class="emblem">🏛️</div><h1>Global Idle Civilization</h1><p>Build. Conquer. Endure.</p></div><div class="lform"><input type="text" id="iU" placeholder="Ruler name…" maxlength="20" autocomplete="off"><button class="btn btn-gold" style="width:100%" onclick="doLogin()">Enter</button><p id="lE" class="hidden" style="color:var(--red);font-size:.82rem;text-align:center"></p></div></div>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     SCREEN 1: LOGIN
-     ═══════════════════════════════════════════════════════════════ -->
-<div class="screen-login" id="scr-login">
-  <div class="login-brand">
-    <div class="login-emblem">🏛️</div>
-    <h1>Global Idle<br>Civilization</h1>
-    <p>Build. Conquer. Endure.</p>
-  </div>
-  <div class="login-form">
-    <input type="text" id="inp-user" placeholder="Your ruler name…" maxlength="20" autocomplete="off">
-    <button class="btn btn-gold" style="width:100%" onclick="doLogin()">Enter the World</button>
-    <p class="login-err hidden" id="login-err"></p>
-  </div>
-</div>
+<!-- TEAMS -->
+<div class="scr teams hidden" id="S2"><div class="brand"><h1>Choose Civilization</h1><p id="tw">Welcome</p></div><div class="cbox"><label>Found new civilization</label><div class="row"><input type="text" id="iTN" placeholder="Name…" maxlength="24"></div><div class="row"><input type="password" id="iTP" placeholder="Password (opt)" maxlength="30"><button class="btn btn-gold btn-sm" onclick="doCreate()">Found</button></div></div><p style="text-align:center;font-size:.65rem;text-transform:uppercase;color:var(--txtm);margin-bottom:6px">— or join —</p><div class="tgrid" id="tg"></div></div>
+<div class="pwmod hidden" id="pwM"><div class="pwbox"><h3>🔒 Password</h3><input type="password" id="iPW" placeholder="Password…"><button class="btn btn-gold" onclick="doPJ()">Join</button><button class="btn btn-outline btn-sm" style="width:100%;margin-top:5px" onclick="H('pwM')">Cancel</button></div></div>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     SCREEN 2: TEAM SELECT
-     ═══════════════════════════════════════════════════════════════ -->
-<div class="screen-teams hidden" id="scr-teams">
-  <div class="teams-head">
-    <h1>Choose Your Civilization</h1>
-    <p id="teams-welcome">Welcome, ruler</p>
-  </div>
-
-  <div class="create-box">
-    <label>Found a new civilization</label>
-    <div class="row">
-      <input type="text" id="inp-team-name" placeholder="Civilization name…" maxlength="24">
+<!-- GAME -->
+<div class="game hidden" id="S3">
+  <div class="sb">
+    <div class="sb-h"><h2 id="gC">—</h2><div class="sub" id="gM">—</div><div class="sub" style="color:#ff8800" id="gCF">🔥—</div></div>
+    <div class="rstrip"><div class="rpill cg"><span class="rv" id="rG">0</span>Gold<br><span class="rr" id="rrG">+0</span></div><div class="rpill cf"><span class="rv" id="rF">0</span>Food<br><span class="rr" id="rrF">+0</span></div><div class="rpill cs"><span class="rv" id="rS">0</span>Stone<br><span class="rr" id="rrS">+0</span></div><div class="rpill cw"><span class="rv" id="rW">0</span>Wood<br><span class="rr" id="rrW">+0</span></div><div class="rpill ci"><span class="rv" id="rI">0</span>Iron<br><span class="rr" id="rrI">+0</span></div></div>
+    <div class="stabs">
+      <button class="stab on" data-t="place" onclick="stab('place')">Place</button>
+      <button class="stab" data-t="upg" onclick="stab('upg')">Upg</button>
+      <button class="stab" data-t="rank" onclick="stab('rank')">Rank</button>
+      <button class="stab" data-t="ally" onclick="stab('ally')">Ally</button>
+      <button class="stab" data-t="team" onclick="stab('team')">Team</button>
     </div>
-    <div class="row">
-      <input type="password" id="inp-team-pw" placeholder="Password (optional)" maxlength="30">
-      <button class="btn btn-gold btn-sm" onclick="doCreateTeam()">Found</button>
-    </div>
+    <div class="spnl on" id="sp-place"></div><div class="spnl" id="sp-upg"></div><div class="spnl" id="sp-rank"></div><div class="spnl" id="sp-ally"></div><div class="spnl" id="sp-team"></div>
+    <div class="sfoot"><button class="btn btn-outline btn-xs" onclick="doLeave()">Leave</button></div>
   </div>
-
-  <p style="text-align:center;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--txt-muted);margin-bottom:10px;">— or join an existing one —</p>
-  <div class="team-grid" id="team-grid"></div>
-</div>
-
-<!-- Password prompt -->
-<div class="pw-modal hidden" id="pw-modal">
-  <div class="pw-box">
-    <h3>🔒 Enter Password</h3>
-    <p style="color:var(--txt-dim);font-size:0.82rem;margin-bottom:12px;">This civilization is protected</p>
-    <input type="password" id="inp-join-pw" placeholder="Password…">
-    <button class="btn btn-gold" onclick="doJoinWithPassword()">Join</button>
-    <button class="btn btn-outline btn-sm" style="width:100%;margin-top:6px;" onclick="hide('pw-modal')">Cancel</button>
+  <div class="mapa" id="mapa"><canvas id="mc"></canvas>
+    <div class="selbox hidden" id="selBox"></div>
+    <div class="modebar sel hidden" id="selBar">✓ <span id="selCount">0</span> sel <button class="btn" onclick="orderAttack()">Atk</button><button class="btn" onclick="orderMove()">Move</button><button class="btn" onclick="cancelMode()">✕</button></div>
+    <div class="modebar cat hidden" id="catB">🎯 Catapult ≤10 <button class="btn" onclick="cancelMode()">✕</button></div>
+    <div class="modebar ord hidden" id="ordB">🗡️ Click target <button class="btn" onclick="cancelMode()">✕</button></div>
+    <div class="evfloat hidden" id="evB"><strong id="evN">—</strong><span id="evD" style="color:var(--txtd);font-size:.65rem;margin-left:4px">—</span><span class="evtimer" id="evT" style="margin-left:6px">0:00</span></div>
+    <div class="spov hidden" id="spOv"><div class="spmsg"><h2>Choose Spawn</h2><p>Click <b>plains or beach</b>. ≥15 tiles from others.</p><button class="btn btn-outline btn-sm" onclick="spawning=false;H('spOv')">Cancel</button></div></div>
+    <div class="mmwrap"><canvas id="mm" width="160" height="160"></canvas></div>
+    <div class="clog hidden" id="clog"></div>
+    <div class="ttip hidden" id="ttip"></div>
+    <!-- Player tracker -->
+    <div class="tracker hidden" id="tracker"><b>🧭 Tracker</b><br><select id="trackSel" onchange="trackPlayer()"><option value="">— select —</option></select><div class="arrow" id="trackArrow">—</div><div id="trackDist" style="text-align:center;font-size:.6rem">—</div></div>
   </div>
 </div>
+<div class="modov hidden" id="offM"><div class="mod"><h2>⚡ Welcome Back</h2><p>Resources accumulated.</p><div id="offR" style="margin:8px 0 12px;display:flex;flex-direction:column;gap:3px"></div><button class="btn btn-gold" onclick="H('offM')">Collect</button></div></div>
+<div class="deathscr hidden" id="deathS"><h1>☠️ Campfire Died</h1><p>Your civilization has fallen.</p><button class="btn btn-gold" style="font-size:1rem;padding:12px 28px" onclick="doReset()">Start Fresh</button></div>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     SCREEN 3: MAIN GAME
-     ═══════════════════════════════════════════════════════════════ -->
-<div class="game-wrap hidden" id="scr-game">
-
-  <!-- LEFT SIDEBAR -->
-  <div class="sidebar">
-    <div class="side-head">
-      <h2 id="g-civ-name">—</h2>
-      <div class="sub" id="g-player-name">—</div>
-    </div>
-
-    <!-- Resources -->
-    <div class="res-strip">
-      <div class="res-pill c-gold"><span class="rv" id="r-gold">0</span>🪙 Gold<br><span class="rr" id="rr-gold">+0/s</span></div>
-      <div class="res-pill c-food"><span class="rv" id="r-food">0</span>🌾 Food<br><span class="rr" id="rr-food">+0/s</span></div>
-      <div class="res-pill c-stone"><span class="rv" id="r-stone">0</span>🪨 Stone<br><span class="rr" id="rr-stone">+0/s</span></div>
-      <div class="res-pill c-wood"><span class="rv" id="r-wood">0</span>🪵 Wood<br><span class="rr" id="rr-wood">+0/s</span></div>
-      <div class="res-pill c-iron"><span class="rv" id="r-iron">0</span>⛓️ Iron<br><span class="rr" id="rr-iron">+0/s</span></div>
-    </div>
-
-    <!-- Tabs -->
-    <div class="side-tabs">
-      <button class="side-tab active" data-t="build" onclick="sideTab('build')">Build</button>
-      <button class="side-tab" data-t="place" onclick="sideTab('place')">Place</button>
-      <button class="side-tab" data-t="rank" onclick="sideTab('rank')">Ranks</button>
-      <button class="side-tab" data-t="team" onclick="sideTab('team')">Team</button>
-    </div>
-
-    <!-- Build panel (economy upgrades) -->
-    <div class="side-panel active" id="sp-build"></div>
-
-    <!-- Place panel (map placement: walls, soldiers, etc.) -->
-    <div class="side-panel" id="sp-place"></div>
-
-    <!-- Leaderboard -->
-    <div class="side-panel" id="sp-rank"></div>
-
-    <!-- Team / players -->
-    <div class="side-panel" id="sp-team"></div>
-
-    <div class="side-foot">
-      <button class="btn btn-outline btn-xs" onclick="doLeave()">Leave Civ</button>
-    </div>
-  </div>
-
-  <!-- MAP -->
-  <div class="map-area" id="map-area">
-    <canvas id="map-canvas"></canvas>
-
-    <!-- Event banner -->
-    <div class="event-float hidden" id="ev-banner">
-      <div class="ev-text"><strong id="ev-name">—</strong> <span id="ev-desc" style="color:var(--txt-dim);font-size:0.78rem;">—</span></div>
-      <div class="ev-timer" id="ev-timer">0:00</div>
-    </div>
-
-    <!-- Spawn overlay -->
-    <div class="spawn-overlay hidden" id="spawn-overlay">
-      <div class="spawn-msg">
-        <h2>Choose Spawn Location</h2>
-        <p>Click on the map to place your Town Hall.<br>Must be ≥15 tiles from any other civilization.</p>
-        <button class="btn btn-outline btn-sm" id="spawn-cancel-btn" onclick="cancelSpawn()">Cancel</button>
-      </div>
-    </div>
-
-    <!-- Mini-map -->
-    <div class="minimap-wrap">
-      <canvas id="minimap-canvas" width="140" height="140"></canvas>
-    </div>
-
-    <!-- Combat log -->
-    <div class="combat-log hidden" id="combat-log"></div>
-
-    <!-- Tooltip -->
-    <div class="tile-tooltip hidden" id="tile-tip"></div>
-  </div>
-</div>
-
-<!-- Offline modal -->
-<div class="modal-overlay hidden" id="off-modal">
-  <div class="modal">
-    <h2>⚡ Welcome Back</h2>
-    <p>Your civilization kept producing while you were away.</p>
-    <div class="off-rows" id="off-rows"></div>
-    <button class="btn btn-gold" onclick="hide('off-modal')">Collect</button>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════════════
-     JAVASCRIPT — FULL GAME ENGINE
-     ═══════════════════════════════════════════════════════════════════ -->
 <script>
-/* ═══════════════════════════════════════════════════════════════
-   FIREBASE CONFIG — Replace with YOUR project credentials
-   ═══════════════════════════════════════════════════════════════ */
-const firebaseConfig = {
-  apiKey:            "AIzaSyBuBJ-1iP6lv8ehbYoLH4t4wmprc47G9Bc",
-  authDomain:        "persecivil.firebaseapp.com",
-  databaseURL:       "https://persecivil-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId:         "persecivil",
-  storageBucket:     "persecivil.firebasestorage.app",
-  messagingSenderId: "778722023561",
-  appId:             "1:778722023561:web:9a58d110e5146ada044e58",
-  measurementId:     "G-QSTLBH2T3J"
+firebase.initializeApp({apiKey:"AIzaSyBuBJ-1iP6lv8ehbYoLH4t4wmprc47G9Bc",authDomain:"persecivil.firebaseapp.com",databaseURL:"https://persecivil-default-rtdb.europe-west1.firebasedatabase.app",projectId:"persecivil",storageBucket:"persecivil.firebasestorage.app",messagingSenderId:"778722023561",appId:"1:778722023561:web:9a58d110e5146ada044e58"});
+const db=firebase.database();
+
+// ===== CONSTANTS =====
+const MW=400,MH=400,TPX=24,SDIST=15,TICK=3000,CMUL=1.4,CFMAX=500; // 400x400 map (4x area)
+const RK=['gold','food','stone','wood','iron'],RI={gold:'🪙',food:'🌾',stone:'🪨',wood:'🪵',iron:'⛓️'},RID={gold:'G',food:'F',stone:'S',wood:'W',iron:'I'};
+// Team colors (12 distinct)
+const TCOLS=['#4caf6a','#d94545','#4a90d9','#d9a03e','#9b59b6','#1abc9c','#e74c8c','#3498db','#e67e22','#2ecc71','#e84393','#00cec9'];
+// Biomes: 0=deep,1=shallow,2=beach,3=plains,4=forest,5=mountain,6=snow,7=river
+const B={DEEP:0,SHAL:1,BEACH:2,PLAIN:3,FOREST:4,MOUNT:5,SNOW:6,RIVER:7};
+const BCOL={0:'#0a2844',1:'#1a4468',2:'#c8b87a',3:'#4a8a44',4:'#2a6624',5:'#6a6a78',6:'#b0b0c0',7:'#2266aa'};
+const BCOL2={0:'#0e3050',1:'#1e4e72',2:'#d0c082',3:'#52964c',4:'#327228',5:'#747480',6:'#b8b8c8',7:'#2870b8'};
+const BNAME={0:'Deep Ocean',1:'Shallows',2:'Beach',3:'Plains',4:'Forest',5:'Mountain',6:'Snow Peak',7:'River'};
+const isWater=b=>b<=B.SHAL||b===B.RIVER;
+const isLand=b=>b>=B.BEACH&&b!==B.RIVER;
+
+// Upgrades (reduced ~1/3 from 7x, so ~4.5x original)
+const UPG={
+  townhall:{n:'Town Hall',d:'+3 All/tick',b:{gold:3,food:3,stone:3,wood:3,iron:3},c:{gold:230,food:230,stone:230,wood:230,iron:140}},
+  barracks:{n:'Barracks',d:'+5 HP/unit',b:{},c:{gold:140,food:185,stone:90,wood:90,iron:70}},
+  workshop:{n:'Workshop',d:'+10 HP/struct',b:{},c:{gold:90,food:45,stone:140,wood:140,iron:90}},
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-/* ═══════════════════════════════════════════════════════════════
-   CONSTANTS & DEFINITIONS
-   ═══════════════════════════════════════════════════════════════ */
-const MAP_W = 200, MAP_H = 200;          // World size in tiles
-const TILE_PX = 28;                       // Pixel size per tile
-const SPAWN_MIN_DIST = 15;               // Min distance between spawns
-const TICK_MS = 3000;                     // Resource tick interval
-const COST_MULT = 1.4;                   // Building cost multiplier per level
-
-// 5 Resources
-const RES_KEYS = ['gold','food','stone','wood','iron'];
-const RES_ICONS = { gold:'🪙', food:'🌾', stone:'🪨', wood:'🪵', iron:'⛓️' };
-const RES_CSS = { gold:'cg', food:'cf', stone:'cs', wood:'cw', iron:'ci' };
-
-// Economy buildings (sidebar upgrades, not placed on map)
-const BUILDINGS = {
-  market:    { name:'Market',     icon:'🏪', desc:'Trade hub. +Gold.',       boosts:{gold:2},  baseCost:{gold:20,food:10,stone:5,wood:0,iron:0} },
-  farm:      { name:'Farm',       icon:'🌾', desc:'Fertile fields. +Food.',  boosts:{food:2},  baseCost:{gold:10,food:5,stone:0,wood:15,iron:0} },
-  quarry:    { name:'Quarry',     icon:'⛏️', desc:'Deep mines. +Stone.',     boosts:{stone:2}, baseCost:{gold:10,food:10,stone:5,wood:10,iron:0} },
-  lumberyard:{ name:'Lumber Yard',icon:'🪓', desc:'Timber camp. +Wood.',     boosts:{wood:2},  baseCost:{gold:5,food:10,stone:5,wood:5,iron:0} },
-  smelter:   { name:'Smelter',    icon:'🔥', desc:'Forge metals. +Iron.',    boosts:{iron:2},  baseCost:{gold:15,food:5,stone:10,wood:10,iron:5} },
-  townhall:  { name:'Town Hall',  icon:'🏛️', desc:'Seat of power. +All.',   boosts:{gold:1,food:1,stone:1,wood:1,iron:1}, baseCost:{gold:50,food:50,stone:50,wood:50,iron:30} },
-  barracks:  { name:'Barracks',   icon:'⚔️', desc:'Train stronger soldiers. +Army HP.',  boosts:{}, baseCost:{gold:30,food:40,stone:20,wood:20,iron:15} },
-  workshop:  { name:'Workshop',   icon:'🔧', desc:'Better walls. +Wall HP.', boosts:{}, baseCost:{gold:20,food:10,stone:30,wood:30,iron:20} },
+// Placeables (reduced ~1/3, production 3x'd). Costs scale with power via getCost()
+const PL={
+  farm:{n:'Farm',cat:'econ',d:'+9 Food',hp:40,co:{gold:45,food:22,wood:70},t:'s',pr:{food:9},land:1},
+  lumberyard:{n:'Lumber',cat:'econ',d:'+9 Wood',hp:40,co:{gold:22,food:45,wood:22},t:'s',pr:{wood:9},land:1},
+  mine:{n:'Mine',cat:'econ',d:'+9 Stone +2 Gold',hp:40,co:{gold:45,food:45,stone:22,wood:45},t:'s',pr:{stone:9,gold:2},land:1},
+  market:{n:'Market',cat:'econ',d:'+9 Gold',hp:35,co:{gold:90,food:45,stone:22,wood:22},t:'s',pr:{gold:9},land:1},
+  smelter:{n:'Smelter',cat:'econ',d:'+6 Iron',hp:45,co:{gold:70,food:22,stone:45,wood:45,iron:22},t:'s',pr:{iron:6},land:1},
+  wall:{n:'Wall',cat:'def',d:'Barrier',hp:60,co:{stone:70,wood:45},t:'s',land:1},
+  tower:{n:'Tower',cat:'def',d:'Auto R:3',hp:80,co:{stone:115,wood:70,iron:45},t:'s',rng:3,dmg:8,land:1},
+  port:{n:'Port',cat:'def',d:'Boats here',hp:70,co:{wood:140,stone:90,iron:45},t:'s',land:1,beach:1},
+  outpost:{n:'Outpost',cat:'def',d:'Remote base. 3 troops adj.',hp:100,co:{wood:185,stone:140,iron:70,gold:90},t:'s',land:1,outpost:1},
+  traderoute:{n:'Trade Post',cat:'econ',d:'+6 Gold (allied)',hp:30,co:{gold:140,wood:90},t:'s',pr:{gold:6},land:1,trade:1},
+  soldier:{n:'Soldier',cat:'mil',d:'Infantry',hp:30,co:{gold:45,food:70,iron:22},t:'u',dmg:12,spd:1,land:1},
+  archer:{n:'Archer',cat:'mil',d:'Ranged R:3',hp:20,co:{gold:70,food:45,wood:45},t:'u',dmg:10,rng:3,spd:1,land:1},
+  knight:{n:'Knight',cat:'mil',d:'Cavalry',hp:60,co:{gold:140,food:115,iron:70},t:'u',dmg:20,spd:2,land:1},
+  catapult:{n:'Catapult',cat:'mil',d:'Siege R:10',hp:40,co:{wood:140,iron:90,gold:90},t:'u',dmg:35,rng:10,spd:.5,manual:1,land:1},
+  fishboat:{n:'Fish Boat',cat:'nav',d:'+12 Food',hp:25,co:{wood:90,gold:45},t:'u',spd:1,water:1,pr:{food:12}},
+  transport:{n:'Transport',cat:'nav',d:'Carry 5',hp:50,co:{wood:185,iron:70,gold:90},t:'u',spd:1,water:1,carry:5},
 };
+const EVS=[{id:'h',n:'🌻 Harvest',d:'+50% Food',r:'food',m:1.5,s:300},{id:'g',n:'💰 Gold Rush',d:'+50% Gold',r:'gold',m:1.5,s:300},{id:'p',n:'🌟 Prosperity',d:'+30% All',r:'all',m:1.3,s:360}];
 
-// Placeable items on the map
-const PLACEABLES = {
-  wall:    { name:'Wall',     icon:'🧱', desc:'Defensive barrier.',        hp:50,  cost:{stone:15,wood:10,iron:0},   type:'structure' },
-  tower:   { name:'Tower',    icon:'🗼', desc:'Fires at nearby enemies.',  hp:80,  cost:{stone:25,wood:15,iron:10},  type:'structure', range:3, dmg:8 },
-  soldier: { name:'Soldier',  icon:'⚔️', desc:'Infantry unit.',           hp:30,  cost:{gold:10,food:15,iron:5},    type:'unit', dmg:12, speed:1 },
-  archer:  { name:'Archer',   icon:'🏹', desc:'Ranged attacker.',         hp:20,  cost:{gold:15,food:10,wood:10},   type:'unit', dmg:10, range:3, speed:1 },
-  knight:  { name:'Knight',   icon:'🐴', desc:'Heavy cavalry.',           hp:60,  cost:{gold:30,food:25,iron:15},   type:'unit', dmg:20, speed:2 },
-  catapult:{ name:'Catapult',  icon:'💥', desc:'Siege weapon. Destroys walls.', hp:40, cost:{wood:30,iron:20,gold:20}, type:'unit', dmg:35, range:4, speed:0.5, siege:true },
-};
+// ===== PERLIN NOISE =====
+const perm=new Uint8Array(512);
+(function(){const p=[];for(let i=0;i<256;i++)p[i]=i;let s=42;for(let i=255;i>0;i--){s=(s*16807+1)%2147483647;const j=s%i;[p[i],p[j]]=[p[j],p[i]]}for(let i=0;i<512;i++)perm[i]=p[i&255]})();
+function fade(t){return t*t*t*(t*(t*6-15)+10)}
+function lerp(a,b,t){return a+t*(b-a)}
+function grad(h,x,y){const v=h&3;return(v===0?x+y:v===1?-x+y:v===2?x-y:-x-y)}
+function perlin(x,y){const xi=Math.floor(x)&255,yi=Math.floor(y)&255,xf=x-Math.floor(x),yf=y-Math.floor(y),u=fade(xf),v=fade(yf);return lerp(lerp(grad(perm[perm[xi]+yi],xf,yf),grad(perm[perm[xi+1]+yi],xf-1,yf),u),lerp(grad(perm[perm[xi]+yi+1],xf,yf-1),grad(perm[perm[xi+1]+yi+1],xf-1,yf-1),u),v)}
+function fbm(x,y,o=6){let v=0,a=1,f=1,m=0;for(let i=0;i<o;i++){v+=perlin(x*f,y*f)*a;m+=a;a*=.5;f*=2}return v/m}
+function sR(x,y){let s=x*374761393+y*668265263+1274126177;s=(s^(s>>13))*1274126177;s=s^(s>>16);return(s&0x7fffffff)/0x7fffffff}
 
-// Terrain types
-const T = {
-  EMPTY:0, GRASS:1, FOREST:2, MOUNTAIN:3, WATER:4,
-  // Placed objects stored separately in Firebase
-};
-
-// Terrain colors
-const TERRAIN_COLORS = {
-  [T.EMPTY]:    '#0e1114',
-  [T.GRASS]:    '#1a2618',
-  [T.FOREST]:   '#162a15',
-  [T.MOUNTAIN]: '#2a2a30',
-  [T.WATER]:    '#0f1a2a',
-};
-const TERRAIN_COLORS_LIGHT = {
-  [T.EMPTY]:    '#141820',
-  [T.GRASS]:    '#1f2e1c',
-  [T.FOREST]:   '#1c3218',
-  [T.MOUNTAIN]: '#33333a',
-  [T.WATER]:    '#132240',
-};
-
-// Global events
-const EVENTS = [
-  { id:'harvest',   name:'🌻 Harvest Festival',    desc:'+50% Food',       res:'food',  mult:1.5, dur:300 },
-  { id:'goldrush',  name:'💰 Gold Rush',            desc:'+50% Gold',       res:'gold',  mult:1.5, dur:300 },
-  { id:'quarryboom',name:'🏔️ Quarry Boom',          desc:'+50% Stone',      res:'stone', mult:1.5, dur:240 },
-  { id:'logging',   name:'🪵 Logging Season',       desc:'+60% Wood',       res:'wood',  mult:1.6, dur:240 },
-  { id:'ironage',   name:'⛓️ Iron Age',              desc:'+75% Iron',       res:'iron',  mult:1.75,dur:200 },
-  { id:'prosperity',name:'🌟 Age of Prosperity',    desc:'+30% All',        res:'all',   mult:1.3, dur:360 },
-];
-
-/* ═══════════════════════════════════════════════════════════════
-   STATE
-   ═══════════════════════════════════════════════════════════════ */
-let me = null;               // { name }
-let myTeamId = null;
-let teamSnap = null;         // live team data
-let allTeams = {};
-let worldTiles = null;       // Uint8Array MAP_W*MAP_H
-let worldObjects = {};       // key "x,y" => { type, owner, hp, maxHp, team, id }
-let activeEvent = null;
-let listeners = [];
-let tickTimer = null;
-let selectedPlace = null;    // current placement tool
-let pendingPwTeam = null;    // team ID awaiting password
-
-// Map pan/zoom
-let camX = MAP_W/2 * TILE_PX, camY = MAP_H/2 * TILE_PX;
-let zoom = 1;
-let isDragging = false, dragStartX, dragStartY, camStartX, camStartY;
-let spawning = false;
-
-// Canvas refs
-let mapCanvas, mapCtx, mapArea;
-let miniCanvas, miniCtx;
-let animFrame;
-
-/* ═══════════════════════════════════════════════════════════════
-   HELPERS
-   ═══════════════════════════════════════════════════════════════ */
-const $ = id => document.getElementById(id);
-const show = id => $(id).classList.remove('hidden');
-const hide = id => $(id).classList.add('hidden');
-const fmtN = n => n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e4?(n/1e3).toFixed(1)+'K':Math.floor(n).toLocaleString();
-const sKey = s => s.replace(/[.#$\[\]/]/g,'_');
-const escH = s => { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; };
-
-function toast(msg, type='gold') {
-  const el = document.createElement('div');
-  el.className = 'toast-msg ' + type;
-  el.textContent = msg;
-  $('toasts').appendChild(el);
-  setTimeout(() => el.remove(), 3000);
-}
-
-function showScreen(id) {
-  ['scr-login','scr-teams','scr-game'].forEach(s => {
-    $(s).classList.toggle('hidden', s !== id);
-  });
-}
-
-function hashPw(pw) {
-  // Simple hash for demo — in production use proper auth
-  let h = 0;
-  for (let i = 0; i < pw.length; i++) {
-    h = ((h << 5) - h + pw.charCodeAt(i)) | 0;
+// ===== TERRAIN — less mountains, rivers =====
+let biomes;
+function genTerrain(){
+  biomes=new Uint8Array(MW*MH);
+  const sc=.016,msc=.04; // larger scale = smaller biome patches
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){
+    let e=fbm(x*sc+.3,y*sc+.3,6);
+    const nx=x/MW,ny=y/MH,edgeX=Math.min(nx,1-nx)*2,edgeY=Math.min(ny,1-ny)*2;
+    const edge=Math.min(edgeX,edgeY),falloff=edge<.12?edge/.12:1;
+    e=e*.5+falloff*.55-.02;
+    const m=fbm(x*msc+200,y*msc+200,4);
+    let b;
+    if(e<-.1)b=B.DEEP;else if(e<.03)b=B.SHAL;else if(e<.09)b=B.BEACH;
+    else if(e<.65)b=m>.08?B.FOREST:B.PLAIN; // wide plains/forest band
+    else if(e<.82)b=B.MOUNT; // narrow mountain band ~10%
+    else b=B.SNOW;
+    biomes[y*MW+x]=b;
   }
-  return 'h_' + Math.abs(h).toString(36);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   TERRAIN GENERATION (seeded procedural)
-   Generates deterministically from coordinates so every client
-   sees the same map without needing to store it.
-   ═══════════════════════════════════════════════════════════════ */
-function seedRand(x, y) {
-  let s = x * 374761393 + y * 668265263 + 1274126177;
-  s = (s ^ (s >> 13)) * 1274126177;
-  s = s ^ (s >> 16);
-  return (s & 0x7fffffff) / 0x7fffffff;
-}
-
-function genTerrain() {
-  worldTiles = new Uint8Array(MAP_W * MAP_H);
-  for (let y = 0; y < MAP_H; y++) {
-    for (let x = 0; x < MAP_W; x++) {
-      const r = seedRand(x, y);
-      const r2 = seedRand(x + 1000, y + 1000);
-      // Edge = water
-      const edgeDist = Math.min(x, y, MAP_W - 1 - x, MAP_H - 1 - y);
-      let tile;
-      if (edgeDist < 3) tile = T.WATER;
-      else if (edgeDist < 6 && r < 0.4) tile = T.WATER;
-      else if (r < 0.08) tile = T.WATER;
-      else if (r < 0.18) tile = T.MOUNTAIN;
-      else if (r < 0.38) tile = T.FOREST;
-      else tile = T.GRASS;
-      worldTiles[y * MAP_W + x] = tile;
+  // RIVERS: wider (3-tile), more numerous, longer
+  for(let i=0;i<40;i++){
+    let rx,ry,tries=0;
+    do{rx=30+Math.floor(sR(i*77,i*33)*(MW-60));ry=30+Math.floor(sR(i*33,i*77)*(MH-60));tries++}while(biomes[ry*MW+rx]<B.MOUNT&&tries<300);
+    if(tries>=300)continue;
+    for(let step=0;step<400;step++){
+      if(rx<2||ry<2||rx>=MW-2||ry>=MH-2)break;
+      const b=biomes[ry*MW+rx];
+      if(b===B.DEEP||b===B.SHAL)break;
+      // Paint 3-wide river
+      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+        if(Math.abs(dx)+Math.abs(dy)>1)continue; // cross pattern, not full 3x3
+        const nx2=rx+dx,ny2=ry+dy;
+        if(nx2>=0&&ny2>=0&&nx2<MW&&ny2<MH){
+          const cb=biomes[ny2*MW+nx2];
+          if(cb===B.PLAIN||cb===B.FOREST||cb===B.BEACH)biomes[ny2*MW+nx2]=B.RIVER;
+        }
+      }
+      let bestX=rx,bestY=ry,bestE=999;
+      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+        if(!dx&&!dy)continue;
+        const ne=fbm((rx+dx)*sc+.3,(ry+dy)*sc+.3,3)+sR(step*13+i*7,step*7+i*13)*.03;
+        if(ne<bestE){bestE=ne;bestX=rx+dx;bestY=ry+dy}
+      }
+      rx=bestX;ry=bestY;
     }
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   LOGIN
-   ═══════════════════════════════════════════════════════════════ */
-function doLogin() {
-  const name = $('inp-user').value.trim();
-  if (name.length < 2) { $('login-err').textContent='Min 2 characters'; show('login-err'); return; }
-  hide('login-err');
-  me = { name };
-  localStorage.setItem('gic_user', name);
-
-  const saved = localStorage.getItem('gic_team');
-  if (saved) {
-    db.ref('teams/' + saved).once('value').then(s => {
-      if (s.exists()) { joinTeam(saved); }
-      else { localStorage.removeItem('gic_team'); goTeamScreen(); }
-    });
-  } else {
-    goTeamScreen();
-  }
-}
-
-function tryAutoLogin() {
-  const u = localStorage.getItem('gic_user');
-  if (u) { $('inp-user').value = u; doLogin(); }
-}
-$('inp-user').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
-
-/* ═══════════════════════════════════════════════════════════════
-   TEAM SCREEN
-   ═══════════════════════════════════════════════════════════════ */
-function goTeamScreen() {
-  showScreen('scr-teams');
-  $('teams-welcome').textContent = 'Welcome, ' + me.name;
-  loadTeamList();
-}
-
-function loadTeamList() {
-  db.ref('teams').on('value', snap => {
-    const teams = snap.val() || {};
-    const grid = $('team-grid');
-    const ids = Object.keys(teams);
-    if (!ids.length) {
-      grid.innerHTML = '<p style="color:var(--txt-muted);text-align:center;grid-column:1/-1;padding:30px;">No civilizations yet. Be the first!</p>';
-      return;
-    }
-    grid.innerHTML = ids.map(id => {
-      const t = teams[id];
-      const pc = t.players ? Object.keys(t.players).length : 0;
-      const pw = t.passwordHash ? '🔒 ' : '';
-      return `<div class="team-card" onclick="tryJoinTeam('${id}')">
-        <div class="tc-info"><h3>${pw}${escH(t.name)}</h3><span>${pc} player${pc!==1?'s':''} · ⚡${fmtN(calcPower(t))}</span></div>
-        <button class="btn btn-gold btn-xs">Join</button>
-      </div>`;
-    }).join('');
-  });
-}
-
-function doCreateTeam() {
-  const name = $('inp-team-name').value.trim();
-  if (name.length < 2) { toast('Name too short','red'); return; }
-  const pw = $('inp-team-pw').value.trim();
-
-  const id = name.toLowerCase().replace(/[^a-z0-9]/g,'_').substring(0,20) + '_' + Date.now().toString(36);
-  const team = {
-    name,
-    passwordHash: pw ? hashPw(pw) : null,
-    resources: { gold:150, food:150, stone:150, wood:100, iron:50 },
-    buildings: {},
-    players: {},
-    spawnX: -1, spawnY: -1,
-    createdAt: firebase.database.ServerValue.TIMESTAMP,
-    lastTick: firebase.database.ServerValue.TIMESTAMP,
+// ===== SPRITE DRAWING (compact) =====
+function dSpr(c,ty,x,y,s,fr,col){
+  // col = team color override for units
+  const f=fr;const tc=col||'#4caf6a';const ec=f?tc:'#d94545';
+  const D={
+    campfire(c,x,y,s){c.fillStyle='#6a4020';c.fillRect(x-s*.25,y+s*.06,s*.5,s*.08);c.fillStyle='#ff4400';c.beginPath();c.moveTo(x-s*.15,y+s*.06);c.quadraticCurveTo(x,y-s*.28,x+s*.15,y+s*.06);c.fill();c.fillStyle='#ffcc00';c.beginPath();c.moveTo(x-s*.06,y+s*.02);c.quadraticCurveTo(x,y-s*.08,x+s*.06,y+s*.02);c.fill()},
+    farm(c,x,y,s){c.fillStyle='#8B7355';c.fillRect(x-s*.28,y+s*.06,s*.56,s*.14);c.fillStyle=f?'#88aa38':'#aa8838';for(let i=-2;i<=2;i++)c.fillRect(x+i*s*.11-s*.02,y-s*.2,s*.04,s*.3);c.fillStyle='#d4b030';for(let i=-2;i<=2;i++){c.beginPath();c.arc(x+i*s*.11,y-s*.22,s*.035,0,6.3);c.fill()}},
+    lumberyard(c,x,y,s){c.fillStyle='#7a5a20';c.fillRect(x-s*.1,y-s*.04,s*.2,s*.24);c.fillStyle='#5a4010';c.fillRect(x-s*.15,y+s*.15,s*.3,s*.05)},
+    mine(c,x,y,s){c.fillStyle='#606068';c.beginPath();c.moveTo(x-s*.25,y+s*.18);c.lineTo(x,y-s*.15);c.lineTo(x+s*.25,y+s*.18);c.closePath();c.fill();c.fillStyle='#222';c.beginPath();c.arc(x,y+s*.03,s*.1,Math.PI,0);c.closePath();c.fill()},
+    market(c,x,y,s){c.fillStyle=ec;c.beginPath();c.moveTo(x-s*.25,y);c.lineTo(x,y-s*.24);c.lineTo(x+s*.25,y);c.closePath();c.fill();c.fillStyle='#7a5520';c.fillRect(x-s*.2,y,s*.4,s*.14);c.fillStyle='#e2b350';c.beginPath();c.arc(x,y+s*.08,s*.04,0,6.3);c.fill()},
+    smelter(c,x,y,s){c.fillStyle='#606068';c.fillRect(x-s*.18,y-s*.06,s*.36,s*.26);c.fillStyle='#ff6622';c.beginPath();c.arc(x,y+s*.03,s*.07,0,6.3);c.fill();c.fillStyle='#ffaa22';c.beginPath();c.arc(x,y,s*.04,0,6.3);c.fill()},
+    wall(c,x,y,s){c.fillStyle=f?'#6a8060':'#806a60';c.fillRect(x-s*.32,y-s*.16,s*.64,s*.36);for(let i=0;i<4;i++)c.fillRect(x-s*.3+i*s*.17,y-s*.24,s*.11,s*.08)},
+    tower(c,x,y,s){c.fillStyle=ec;c.fillRect(x-s*.12,y-s*.04,s*.24,s*.26);c.beginPath();c.moveTo(x-s*.18,y-s*.04);c.lineTo(x,y-s*.28);c.lineTo(x+s*.18,y-s*.04);c.closePath();c.fill();c.fillStyle='#ffdd66';c.fillRect(x-s*.03,y+s*.04,s*.06,s*.06)},
+    port(c,x,y,s){c.fillStyle='#7a6030';c.fillRect(x-s*.26,y-s*.08,s*.52,s*.26);c.fillStyle=ec;c.fillRect(x-s*.2,y-s*.03,s*.4,s*.16);c.fillStyle='#bba880';c.fillRect(x-s*.03,y-s*.26,s*.06,s*.2)},
+    outpost(c,x,y,s){c.fillStyle=ec;c.fillRect(x-s*.2,y-s*.1,s*.4,s*.3);c.fillStyle='#fff';c.fillRect(x-s*.03,y-s*.3,s*.06,s*.22);c.fillStyle=ec;c.fillRect(x+s*.03,y-s*.3,s*.1,s*.07)},
+    traderoute(c,x,y,s){c.fillStyle='#d4a843';c.fillRect(x-s*.2,y-s*.06,s*.4,s*.2);c.strokeStyle='#fff';c.lineWidth=1;c.beginPath();c.moveTo(x-s*.15,y+s*.04);c.lineTo(x+s*.15,y+s*.04);c.stroke();c.fillStyle='#e2b350';c.beginPath();c.arc(x,y-s*.02,s*.06,0,6.3);c.fill()},
+    soldier(c,x,y,s){c.fillStyle=ec;c.fillRect(x-s*.07,y,s*.14,s*.18);c.fillStyle='#ddb89a';c.beginPath();c.arc(x,y-s*.06,s*.07,0,6.3);c.fill();c.fillStyle=ec;c.beginPath();c.arc(x,y-s*.1,s*.08,Math.PI,0);c.fill()},
+    archer(c,x,y,s){c.fillStyle=ec;c.fillRect(x-s*.05,y,s*.1,s*.18);c.fillStyle='#ddb89a';c.beginPath();c.arc(x,y-s*.06,s*.06,0,6.3);c.fill();c.strokeStyle='#8B6914';c.lineWidth=1.5;c.beginPath();c.arc(x-s*.12,y+s*.01,s*.1,-.5,.5);c.stroke()},
+    knight(c,x,y,s){c.fillStyle=ec;c.beginPath();c.ellipse(x,y+s*.05,s*.18,s*.08,0,0,6.3);c.fill();c.fillStyle=ec;c.fillRect(x-s*.05,y-s*.08,s*.1,s*.12);c.fillStyle='#ddb89a';c.beginPath();c.arc(x,y-s*.12,s*.05,0,6.3);c.fill()},
+    catapult(c,x,y,s){c.fillStyle='#6a5030';c.fillRect(x-s*.2,y+s*.05,s*.4,s*.05);c.strokeStyle='#8B6914';c.lineWidth=2;c.beginPath();c.moveTo(x,y+s*.05);c.lineTo(x-s*.12,y-s*.2);c.stroke();c.fillStyle='#ff8822';c.beginPath();c.arc(x-s*.12,y-s*.24,s*.03,0,6.3);c.fill()},
+    fishboat(c,x,y,s){c.fillStyle=ec;c.beginPath();c.moveTo(x-s*.24,y+s*.06);c.lineTo(x-s*.16,y+s*.15);c.lineTo(x+s*.16,y+s*.15);c.lineTo(x+s*.24,y+s*.06);c.closePath();c.fill();c.fillStyle='#bba880';c.fillRect(x-s*.02,y-s*.14,s*.04,s*.22);c.fillStyle='#ccc';c.beginPath();c.moveTo(x+s*.02,y-s*.12);c.lineTo(x+s*.12,y-s*.02);c.lineTo(x+s*.02,y+s*.04);c.fill()},
+    transport(c,x,y,s){c.fillStyle=ec;c.beginPath();c.moveTo(x-s*.28,y+s*.04);c.lineTo(x-s*.22,y+s*.16);c.lineTo(x+s*.22,y+s*.16);c.lineTo(x+s*.28,y+s*.04);c.closePath();c.fill();c.fillStyle='#bba880';c.fillRect(x-s*.02,y-s*.2,s*.04,s*.26)},
+    townhall(c,x,y,s){c.fillStyle='#d4b880';c.fillRect(x-s*.22,y-s*.02,s*.04,s*.2);c.fillRect(x+s*.18,y-s*.02,s*.04,s*.2);c.fillRect(x-s*.02,y-s*.02,s*.04,s*.2);c.fillStyle='#c49a6c';c.beginPath();c.moveTo(x-s*.28,y-s*.02);c.lineTo(x,y-s*.26);c.lineTo(x+s*.28,y-s*.02);c.closePath();c.fill();c.fillStyle='#bba880';c.fillRect(x-s*.24,y+s*.14,s*.48,s*.04);c.fillStyle='#e2b350';c.fillRect(x-.01*s,y-s*.34,s*.07,s*.06)}
   };
-  db.ref('teams/' + id).set(team).then(() => {
-    toast('Civilization founded!','green');
-    joinTeam(id);
-  }).catch(e => toast('Error: ' + e.message,'red'));
+  (D[ty]||function(){})(c,x,y,s);
 }
 
-$('inp-team-name').addEventListener('keydown', e => { if (e.key==='Enter') doCreateTeam(); });
+// ===== STATE =====
+let me=null,myT=null,ts=null,at={},wo={},ae=null,alliances={},lsn=[],tTmr=null,selP=null,ppwT=null;
+let camX=MW/2*TPX,camY=MH/2*TPX,zm=.8,isDr=false,dSX=0,dSY=0,cSX=0,cSY=0,dMoved=false,spawning=false;
+let mcv,mctx,mapa,mmcv,mmctx,aF;
+let mode=null,modeKey=null,selected=[],selDrag=false,selSX=0,selSY=0;
+let trackTarget='';
 
-function tryJoinTeam(id) {
-  db.ref('teams/' + id).once('value').then(snap => {
-    const t = snap.val();
-    if (!t) { toast('Civilization not found','red'); return; }
-    if (t.passwordHash) {
-      pendingPwTeam = id;
-      $('inp-join-pw').value = '';
-      show('pw-modal');
-    } else {
-      joinTeam(id);
-    }
-  });
+// ===== UTIL =====
+const $=id=>document.getElementById(id);const SH=id=>$(id).classList.remove('hidden');const H=id=>$(id).classList.add('hidden');
+const fN=n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e4?(n/1e3).toFixed(1)+'K':Math.floor(n).toLocaleString();
+const sK=s=>s.replace(/[.#$\[\]/]/g,'_');const eH=s=>{const d=document.createElement('div');d.textContent=s;return d.innerHTML};
+function toast(m,t='gold'){const e=document.createElement('div');e.className='toast '+t;e.textContent=m;$('toasts').appendChild(e);setTimeout(()=>e.remove(),3000)}
+function showS(id){['S1','S2','S3'].forEach(s=>$(s).classList.toggle('hidden',s!==id))}
+function hPw(p){let h=0;for(let i=0;i<p.length;i++)h=((h<<5)-h+p.charCodeAt(i))|0;return'h_'+Math.abs(h).toString(36)}
+function getTeamColor(tid){const ids=Object.keys(at).sort();return TCOLS[ids.indexOf(tid)%TCOLS.length]||'#4caf6a'}
+
+// ===== LOGIN/TEAMS =====
+function doLogin(){const n=$('iU').value.trim();if(n.length<2){$('lE').textContent='Min 2';SH('lE');return}H('lE');me={name:n};localStorage.setItem('gic_u',n);const sv=localStorage.getItem('gic_t');if(sv)db.ref('teams/'+sv).once('value').then(s=>{s.exists()?joinT(sv):(localStorage.removeItem('gic_t'),goTS())});else goTS()}
+function tryAL(){const u=localStorage.getItem('gic_u');if(u){$('iU').value=u;doLogin()}}
+$('iU').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
+function goTS(){showS('S2');$('tw').textContent='Welcome, '+me.name;db.ref('teams').on('value',s=>{const t=s.val()||{},g=$('tg'),ids=Object.keys(t);g.innerHTML=ids.length?ids.map(id=>{const v=t[id],pc=v.players?Object.keys(v.players).length:0;return`<div class="tcard" onclick="tryJT('${id}')"><div><h3>${v.passwordHash?'🔒':''}${eH(v.name)}</h3><span>${pc}p ⚡${fN(cPow(v))}</span></div><button class="btn btn-gold btn-xs">Join</button></div>`}).join(''):'<p style="color:var(--txtm);text-align:center;grid-column:1/-1;padding:16px">No civs!</p>'})}
+function doCreate(){const n=$('iTN').value.trim();if(n.length<2)return toast('Short','red');const pw=$('iTP').value.trim();const id=n.toLowerCase().replace(/[^a-z0-9]/g,'_').substring(0,20)+'_'+Date.now().toString(36);db.ref('teams/'+id).set({name:n,passwordHash:pw?hPw(pw):null,resources:{gold:500,food:500,stone:500,wood:400,iron:200},buildings:{},players:{},spawnX:-1,spawnY:-1,campfire:CFMAX,createdAt:firebase.database.ServerValue.TIMESTAMP,lastTick:firebase.database.ServerValue.TIMESTAMP}).then(()=>{toast('Founded!','green');joinT(id)})}
+$('iTN').addEventListener('keydown',e=>{if(e.key==='Enter')doCreate()});
+function tryJT(id){db.ref('teams/'+id).once('value').then(s=>{const t=s.val();if(!t)return;if(t.passwordHash){ppwT=id;$('iPW').value='';SH('pwM')}else joinT(id)})}
+function doPJ(){const pw=$('iPW').value.trim();if(!pw)return;db.ref('teams/'+ppwT+'/passwordHash').once('value').then(s=>{if(s.val()===hPw(pw)){H('pwM');joinT(ppwT)}else toast('Wrong','red')})}
+
+// ===== JOIN/LEAVE =====
+function joinT(id){
+  cleanup();myT=id;localStorage.setItem('gic_t',id);
+  const pR=db.ref('teams/'+id+'/players/'+sK(me.name));
+  pR.set({name:me.name,joinedAt:firebase.database.ServerValue.TIMESTAMP,lastSeen:firebase.database.ServerValue.TIMESTAMP,online:true});
+  pR.onDisconnect().update({lastSeen:firebase.database.ServerValue.TIMESTAMP,online:false});
+  setInterval(()=>{if(myT===id)pR.update({lastSeen:firebase.database.ServerValue.TIMESTAMP,online:true})},25000);
+  db.ref('teams/'+id).on('value',s=>{if(!s.exists()){toast('Deleted','red');doLeave();return}ts=s.val();ts._id=id;if(ts.campfire!==undefined&&ts.campfire<=0){SH('deathS');return}renderSB()});lsn.push({ref:db.ref('teams/'+id),ev:'value'});
+  db.ref('teams').on('value',s=>{at=s.val()||{}});lsn.push({ref:db.ref('teams'),ev:'value'});
+  db.ref('worldObjects').on('value',s=>{wo=s.val()||{}});lsn.push({ref:db.ref('worldObjects'),ev:'value'});
+  db.ref('alliances').on('value',s=>{alliances=s.val()||{}});lsn.push({ref:db.ref('alliances'),ev:'value'});
+  db.ref('globalEvent').on('value',s=>{const ev=s.val();if(ev&&ev.endsAt>Date.now()){const d=EVS.find(e=>e.id===ev.id);if(d){ae={...d,endsAt:ev.endsAt};SH('evB');$('evN').textContent=d.n;$('evD').textContent=d.d}}else{ae=null;H('evB')}});lsn.push({ref:db.ref('globalEvent'),ev:'value'});
+  db.ref('combatLog').orderByChild('ts').limitToLast(12).on('value',s=>{const l=s.val(),el=$('clog');if(!l){el.classList.add('hidden');return}el.classList.remove('hidden');el.innerHTML=Object.values(l).sort((a,b)=>(b.ts||0)-(a.ts||0)).slice(0,10).map(e=>`<div style="padding:1px 0;border-bottom:1px solid rgba(42,49,64,.3)"><span style="color:var(--red)">${eH(e.atk||'')}</span>${e.destroyed?'💀':'⚔️'}<span style="color:var(--blu)">${eH(e.def||'')}</span> ${e.target||''} ${e.dmg}d</div>`).join('')});lsn.push({ref:db.ref('combatLog'),ev:'value'});
+  genTerrain();showS('S3');SH('tracker');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{initMap();startTk();if(ts&&ts.spawnX<0){spawning=true;SH('spOv')}}));
 }
+function doLeave(){cleanup();if(myT)db.ref('teams/'+myT+'/players/'+sK(me.name)).remove();myT=null;ts=null;localStorage.removeItem('gic_t');goTS()}
+function cleanup(){lsn.forEach(({ref,ev})=>ref.off(ev));lsn=[];if(tTmr)clearInterval(tTmr);if(aF)cancelAnimationFrame(aF)}
+function doReset(){H('deathS');Object.keys(wo).forEach(k=>{if(wo[k].team===myT)db.ref('worldObjects/'+k).remove()});db.ref('teams/'+myT).update({campfire:CFMAX,spawnX:-1,spawnY:-1,resources:{gold:500,food:500,stone:500,wood:400,iron:200},buildings:{}});spawning=true;SH('spOv')}
 
-function doJoinWithPassword() {
-  const pw = $('inp-join-pw').value.trim();
-  if (!pw) { toast('Enter password','red'); return; }
-  db.ref('teams/' + pendingPwTeam + '/passwordHash').once('value').then(snap => {
-    if (snap.val() === hashPw(pw)) {
-      hide('pw-modal');
-      joinTeam(pendingPwTeam);
-    } else {
-      toast('Wrong password','red');
-    }
-  });
-}
+// ===== TICK =====
+function startTk(){if(tTmr)clearInterval(tTmr);tTmr=setInterval(()=>{if(!myT||!ts)return;db.ref('teams/'+myT).transaction(d=>{if(!d)return d;const n=Date.now();if((n-(d.lastTick||0))<TICK*.7)return;const r=cRates(d.buildings||{});const tk=Math.max(1,Math.round((n-(d.lastTick||n))/TICK));d.resources=d.resources||{};RK.forEach(k=>{d.resources[k]=(d.resources[k]||0)+(r[k]||0)*tk});d.lastTick=n;return d})},TICK)}
+function cRates(b){const r={};RK.forEach(k=>{r[k]=3}); // base 3 each per tickObject.entries(UPG).forEach(([uk,d])=>{const l=b[uk]||0;if(l>0&&d.b)Object.entries(d.b).forEach(([k,a])=>{r[k]=(r[k]||0)+a*l})});
+  // Check alliance break debuff
+  const debuff=ts?.allyBrokenUntil&&ts.allyBrokenUntil>Date.now()?0.7:1;
+  Object.values(wo).forEach(o=>{if(o.team===myT){const d=PL[o.type];if(d?.pr){
+    // Trade posts only produce if allied neighbor exists
+    if(d.trade){const hasAlly=Object.keys(alliances).some(k=>k.includes(myT)&&alliances[k]?.active);if(!hasAlly)return}
+    Object.entries(d.pr).forEach(([k,a])=>{r[k]=(r[k]||0)+a*debuff})}}});
+  if(ae)RK.forEach(k=>{if(ae.r===k||ae.r==='all')r[k]*=ae.m});
+  RK.forEach(k=>{r[k]=Math.round(r[k]*100)/100});return r}
+function cPow(t){let p=0;RK.forEach(k=>{p+=(t.resources?.[k]||0)});Object.keys(t.buildings||{}).forEach(k=>{p+=(t.buildings[k]||0)*500});const tid2=t._id||'';Object.values(wo).forEach(o=>{if(o.team===tid2)p+=PL[o.type]?.t==='s'?200:100});return Math.floor(p)}
+function gUC(bk,l){const base=UPG[bk].c,m=Math.pow(CMUL,l),c={};RK.forEach(k=>{c[k]=Math.ceil((base[k]||0)*m)});return c}
+function canA(co){if(!ts?.resources)return false;const sc=getCostScale();return RK.every(k=>(ts.resources[k]||0)>=Math.ceil((co[k]||0)*sc))}
+// Costs scale gently with power: +10% per 5000 power, capped at 3x
+function getCostScale(){const pw=cPow({...ts,_id:myT});return Math.min(3,1+pw/50000)}
+function getScaledCost(co){const sc=getCostScale();const c={};RK.forEach(k=>{c[k]=Math.ceil((co[k]||0)*sc)});return c}
+function doUpg(bk){db.ref('teams/'+myT).transaction(d=>{if(!d)return d;const l=(d.buildings?.[bk])||0,c=gUC(bk,l),r=d.resources||{};if(RK.some(k=>(r[k]||0)<(c[k]||0)))return;RK.forEach(k=>{r[k]-=c[k]||0});if(!d.buildings)d.buildings={};d.buildings[bk]=l+1;return d},(e,c)=>{if(c)toast('Upgraded!','green')})}
 
-/* ═══════════════════════════════════════════════════════════════
-   JOIN / LEAVE TEAM
-   ═══════════════════════════════════════════════════════════════ */
-function joinTeam(teamId) {
-  cleanup();
-  myTeamId = teamId;
-  localStorage.setItem('gic_team', teamId);
-
-  // Register player
-  const pRef = db.ref('teams/' + teamId + '/players/' + sKey(me.name));
-  pRef.set({ name: me.name, joinedAt: firebase.database.ServerValue.TIMESTAMP, lastSeen: firebase.database.ServerValue.TIMESTAMP });
-  pRef.onDisconnect().update({ lastSeen: firebase.database.ServerValue.TIMESTAMP });
-
-  // Heartbeat
-  const hb = setInterval(() => {
-    if (myTeamId === teamId) pRef.update({ lastSeen: firebase.database.ServerValue.TIMESTAMP });
-    else clearInterval(hb);
-  }, 25000);
-
-  // Listen team
-  const tRef = db.ref('teams/' + teamId);
-  tRef.on('value', snap => {
-    if (!snap.exists()) { toast('Civ deleted','red'); doLeave(); return; }
-    const prev = teamSnap;
-    teamSnap = snap.val();
-    teamSnap._id = teamId;
-    if (!prev && teamSnap.lastTick) checkOffline(teamSnap);
-    renderSidebar();
-  });
-  listeners.push({ ref: tRef, ev: 'value' });
-
-  // Listen all teams
-  const aRef = db.ref('teams');
-  aRef.on('value', s => { allTeams = s.val() || {}; });
-  listeners.push({ ref: aRef, ev: 'value' });
-
-  // Listen world objects
-  const oRef = db.ref('worldObjects');
-  oRef.on('value', s => { worldObjects = s.val() || {}; });
-  listeners.push({ ref: oRef, ev: 'value' });
-
-  // Listen global event
-  const eRef = db.ref('globalEvent');
-  eRef.on('value', s => {
-    const ev = s.val();
-    if (ev && ev.endsAt > Date.now()) {
-      const def = EVENTS.find(e => e.id === ev.id);
-      if (def) { activeEvent = {...def, endsAt: ev.endsAt}; show('ev-banner'); renderEvent(); }
-    } else { activeEvent = null; hide('ev-banner'); }
-  });
-  listeners.push({ ref: eRef, ev: 'value' });
-
-  // Listen combat log
-  const cRef = db.ref('combatLog');
-  cRef.orderByChild('ts').limitToLast(30).on('value', s => {
-    const log = s.val();
-    renderCombatLog(log);
-  });
-  listeners.push({ ref: cRef, ev: 'value' });
-
-  genTerrain();
-  initMap();
-  startTick();
-  maybeSpawnEvent();
-
-  // Check if team needs spawn location
-  if (teamSnap && teamSnap.spawnX < 0) {
-    spawning = true;
-    show('spawn-overlay');
-  }
-
-  showScreen('scr-game');
-}
-
-function doLeave() {
-  if (!myTeamId) return;
-  cleanup();
-  db.ref('teams/' + myTeamId + '/players/' + sKey(me.name)).remove();
-  myTeamId = null; teamSnap = null;
-  localStorage.removeItem('gic_team');
-  goTeamScreen();
-}
-
-function cleanup() {
-  listeners.forEach(({ref, ev}) => ref.off(ev));
-  listeners = [];
-  if (tickTimer) clearInterval(tickTimer);
-  if (animFrame) cancelAnimationFrame(animFrame);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   RESOURCE TICK
-   ═══════════════════════════════════════════════════════════════ */
-function startTick() {
-  if (tickTimer) clearInterval(tickTimer);
-  tickTimer = setInterval(doTick, TICK_MS);
-}
-
-function doTick() {
-  if (!myTeamId || !teamSnap) return;
-  db.ref('teams/' + myTeamId).transaction(d => {
-    if (!d) return d;
-    const now = Date.now();
-    if ((now - (d.lastTick || 0)) < TICK_MS * 0.7) return;
-    const rates = calcRates(d.buildings || {});
-    const elapsed = now - (d.lastTick || now);
-    const ticks = Math.max(1, Math.round(elapsed / TICK_MS));
-    d.resources = d.resources || {};
-    RES_KEYS.forEach(k => { d.resources[k] = (d.resources[k] || 0) + (rates[k] || 0) * ticks; });
-    d.lastTick = now;
-    return d;
-  });
-}
-
-function calcRates(blds) {
-  const b = blds || {};
-  const rates = {};
-  RES_KEYS.forEach(k => { rates[k] = 1; }); // base 1 each
-  Object.entries(BUILDINGS).forEach(([bk, def]) => {
-    const lvl = b[bk] || 0;
-    if (lvl > 0 && def.boosts) {
-      Object.entries(def.boosts).forEach(([rk, amt]) => {
-        rates[rk] = (rates[rk] || 0) + amt * lvl;
-      });
-    }
-  });
-  // Event multiplier
-  if (activeEvent) {
-    RES_KEYS.forEach(k => {
-      if (activeEvent.res === k || activeEvent.res === 'all') rates[k] *= activeEvent.mult;
-    });
-  }
-  RES_KEYS.forEach(k => { rates[k] = Math.round(rates[k] * 100) / 100; });
-  return rates;
-}
-
-function calcPower(t) {
-  if (!t) return 0;
-  const r = t.resources || {};
-  const b = t.buildings || {};
-  let p = 0;
-  RES_KEYS.forEach(k => { p += (r[k] || 0); });
-  Object.keys(b).forEach(k => { p += (b[k] || 0) * 500; });
-  // Count placed objects
-  Object.values(worldObjects).forEach(o => { if (o.team === t._id || o.team === t.name) p += 100; });
-  return Math.floor(p);
-}
-
-function getUpgradeCost(bk, lvl) {
-  const base = BUILDINGS[bk].baseCost;
-  const m = Math.pow(COST_MULT, lvl);
-  const c = {};
-  RES_KEYS.forEach(k => { c[k] = Math.ceil((base[k] || 0) * m); });
-  return c;
-}
-
-function canAfford(cost) {
-  if (!teamSnap || !teamSnap.resources) return false;
-  return RES_KEYS.every(k => (teamSnap.resources[k] || 0) >= (cost[k] || 0));
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   BUILDING UPGRADES
-   ═══════════════════════════════════════════════════════════════ */
-function doUpgrade(bk) {
-  db.ref('teams/' + myTeamId).transaction(d => {
-    if (!d) return d;
-    const lvl = (d.buildings && d.buildings[bk]) || 0;
-    const cost = getUpgradeCost(bk, lvl);
-    const r = d.resources || {};
-    if (RES_KEYS.some(k => (r[k] || 0) < (cost[k] || 0))) return;
-    RES_KEYS.forEach(k => { r[k] = (r[k] || 0) - (cost[k] || 0); });
-    d.resources = r;
-    if (!d.buildings) d.buildings = {};
-    d.buildings[bk] = lvl + 1;
-    return d;
-  }, (err, committed) => {
-    if (committed) toast(BUILDINGS[bk].name + ' upgraded!','green');
-    else if (!err) toast('Not enough resources','red');
-  });
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   MAP RENDERING (Canvas-based for performance)
-   ═══════════════════════════════════════════════════════════════ */
-function initMap() {
-  mapCanvas = $('map-canvas');
-  mapCtx = mapCanvas.getContext('2d');
-  mapArea = $('map-area');
-  miniCanvas = $('minimap-canvas');
-  miniCtx = miniCanvas.getContext('2d');
-
-  resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
-
-  // Pan controls
-  mapArea.addEventListener('mousedown', onDragStart);
-  mapArea.addEventListener('mousemove', onDragMove);
-  mapArea.addEventListener('mouseup', onDragEnd);
-  mapArea.addEventListener('mouseleave', onDragEnd);
-  mapArea.addEventListener('wheel', onZoom, { passive: false });
-
+// ===== MAP =====
+function initMap(){
+  mcv=$('mc');mctx=mcv.getContext('2d');mapa=$('mapa');mmcv=$('mm');mmctx=mmcv.getContext('2d');
+  fixSz();window.addEventListener('resize',fixSz);
+  mapa.addEventListener('mousedown',onMS);mapa.addEventListener('mousemove',onMM);mapa.addEventListener('mouseup',onMU);mapa.addEventListener('mouseleave',onMU);
+  mapa.addEventListener('wheel',e=>{e.preventDefault();zm=Math.max(.15,Math.min(5,zm*(e.deltaY>0?.9:1.1)))},{passive:false});
+  mapa.addEventListener('contextmenu',e=>e.preventDefault());
+  mapa.addEventListener('mousemove',onHov);
   // Touch
-  mapArea.addEventListener('touchstart', onTouchStart, { passive: false });
-  mapArea.addEventListener('touchmove', onTouchMove, { passive: false });
-  mapArea.addEventListener('touchend', onTouchEnd);
-
-  // Click for placement / spawn
-  mapArea.addEventListener('click', onMapClick);
-  mapArea.addEventListener('mousemove', onMapHover);
-
-  // Center on spawn if exists
-  if (teamSnap && teamSnap.spawnX >= 0) {
-    camX = teamSnap.spawnX * TILE_PX;
-    camY = teamSnap.spawnY * TILE_PX;
-  }
-
-  renderLoop();
-  renderMinimap();
-  setInterval(renderMinimap, 3000);
+  let tD=0;
+  mapa.addEventListener('touchstart',e=>{if(e.touches.length===1){isDr=true;dMoved=false;dSX=e.touches[0].clientX;dSY=e.touches[0].clientY;cSX=camX;cSY=camY}else if(e.touches.length===2){isDr=false;tD=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY)}e.preventDefault()},{passive:false});
+  mapa.addEventListener('touchmove',e=>{if(e.touches.length===1&&isDr){dMoved=true;camX=cSX-(e.touches[0].clientX-dSX)/zm;camY=cSY-(e.touches[0].clientY-dSY)/zm}else if(e.touches.length===2){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);zm=Math.max(.15,Math.min(5,zm*(d/tD)));tD=d}e.preventDefault()},{passive:false});
+  mapa.addEventListener('touchend',()=>isDr=false);
+  if(ts?.spawnX>=0){camX=ts.spawnX*TPX;camY=ts.spawnY*TPX}
+  rLoop();renderMM();setInterval(renderMM,2500);setInterval(updateTracker,1000);
 }
+function fixSz(){const r=mapa.getBoundingClientRect();mcv.width=Math.floor(r.width);mcv.height=Math.floor(r.height);mcv.style.width=r.width+'px';mcv.style.height=r.height+'px'}
+function rLoop(){drawMap();aF=requestAnimationFrame(rLoop)}
 
-function resizeCanvas() {
-  const rect = mapArea.getBoundingClientRect();
-  mapCanvas.width = rect.width;
-  mapCanvas.height = rect.height;
-}
+function drawMap(){
+  const w=mcv.width,h=mcv.height;if(w<10||h<10)return;const c=mctx;
+  const tZ=TPX*zm,oX=Math.floor(w/2-camX*zm),oY=Math.floor(h/2-camY*zm);
+  c.fillStyle='#0a2040';c.fillRect(0,0,w,h);
+  const x0=Math.max(0,Math.floor(-oX/tZ)-1),y0=Math.max(0,Math.floor(-oY/tZ)-1);
+  const x1=Math.min(MW-1,Math.ceil((w-oX)/tZ)+1),y1=Math.min(MH-1,Math.ceil((h-oY)/tZ)+1);
 
-function renderLoop() {
-  drawMap();
-  animFrame = requestAnimationFrame(renderLoop);
-}
-
-function drawMap() {
-  const w = mapCanvas.width, h = mapCanvas.height;
-  const ctx = mapCtx;
-  ctx.fillStyle = '#080a0d';
-  ctx.fillRect(0, 0, w, h);
-
-  const tileZ = TILE_PX * zoom;
-  const offX = w / 2 - camX * zoom;
-  const offY = h / 2 - camY * zoom;
-
-  // Visible tile range
-  const x0 = Math.max(0, Math.floor(-offX / tileZ));
-  const y0 = Math.max(0, Math.floor(-offY / tileZ));
-  const x1 = Math.min(MAP_W - 1, Math.ceil((w - offX) / tileZ));
-  const y1 = Math.min(MAP_H - 1, Math.ceil((h - offY) / tileZ));
-
-  // Draw terrain
-  for (let y = y0; y <= y1; y++) {
-    for (let x = x0; x <= x1; x++) {
-      const tile = worldTiles[y * MAP_W + x];
-      const px = x * tileZ + offX;
-      const py = y * tileZ + offY;
-
-      // Checker pattern
-      const alt = (x + y) % 2 === 0;
-      ctx.fillStyle = alt ? TERRAIN_COLORS[tile] : TERRAIN_COLORS_LIGHT[tile];
-      ctx.fillRect(px, py, tileZ + 0.5, tileZ + 0.5);
-
-      // Grid lines (only when zoomed in enough)
-      if (zoom > 0.6) {
-        ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-        ctx.strokeRect(px, py, tileZ, tileZ);
-      }
+  // Terrain
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+    const b=biomes[y*MW+x],px=Math.floor(x*tZ+oX),py=Math.floor(y*tZ+oY),sz=Math.ceil(tZ)+1;
+    c.fillStyle=(x+y)%2===0?BCOL[b]:BCOL2[b];c.fillRect(px,py,sz,sz);
+    if(tZ>10){const r=sR(x*3,y*7);
+      if(b===B.FOREST){c.fillStyle='#1e5a18';c.beginPath();c.arc(px+tZ*.3+r*tZ*.3,py+tZ*.3,tZ*.11,0,6.3);c.fill()}
+      else if(b===B.MOUNT){c.fillStyle='#8a8a98';c.beginPath();c.moveTo(px+tZ*.25,py+tZ*.7);c.lineTo(px+tZ*.5,py+tZ*.15);c.lineTo(px+tZ*.75,py+tZ*.7);c.closePath();c.fill()}
+      else if(b===B.RIVER){c.fillStyle='#3a68a0';c.fillRect(px+tZ*.1,py+tZ*.35,tZ*.8,tZ*.3)}
     }
   }
+  // Grid
+  if(zm>.3){c.strokeStyle='rgba(255,255,255,0.08)';c.lineWidth=.6;c.beginPath();
+    for(let y=y0;y<=y1+1;y++){const py=Math.floor(y*tZ+oY);c.moveTo(x0*tZ+oX,py);c.lineTo((x1+1)*tZ+oX,py)}
+    for(let x=x0;x<=x1+1;x++){const px=Math.floor(x*tZ+oX);c.moveTo(px,y0*tZ+oY);c.lineTo(px,(y1+1)*tZ+oY)}
+    c.stroke()}
 
-  // Draw placed objects
-  ctx.font = `${Math.max(10, tileZ * 0.65)}px serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-
-  Object.entries(worldObjects).forEach(([key, obj]) => {
-    const [ox, oy] = key.split(',').map(Number);
-    if (ox < x0 - 1 || ox > x1 + 1 || oy < y0 - 1 || oy > y1 + 1) return;
-    const px = ox * tileZ + offX + tileZ / 2;
-    const py = oy * tileZ + offY + tileZ / 2;
-
-    // Team color background
-    const isMyTeam = obj.team === myTeamId;
-    const bgColor = isMyTeam ? 'rgba(76,175,106,0.2)' : 'rgba(217,69,69,0.2)';
-    ctx.fillStyle = bgColor;
-    ctx.fillRect(ox * tileZ + offX + 1, oy * tileZ + offY + 1, tileZ - 2, tileZ - 2);
-
-    // Border
-    ctx.strokeStyle = isMyTeam ? 'rgba(76,175,106,0.5)' : 'rgba(217,69,69,0.4)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(ox * tileZ + offX + 1, oy * tileZ + offY + 1, tileZ - 2, tileZ - 2);
-
-    // Icon
-    const def = PLACEABLES[obj.type] || {};
-    ctx.fillText(def.icon || '?', px, py);
-
+  // Objects grouped by tile
+  const tg={};Object.entries(wo).forEach(([k,o])=>{const t=o.tx+','+o.ty;if(!tg[t])tg[t]=[];tg[t].push({id:k,...o})});
+  Object.entries(tg).forEach(([tile,objs])=>{
+    const[ox,oy]=tile.split(',').map(Number);if(ox<x0-1||ox>x1+1||oy<y0-1||oy>y1+1)return;
+    const px=Math.floor(ox*tZ+oX),py=Math.floor(oy*tZ+oY),sz=Math.ceil(tZ);
+    const first=objs[0],iM=first.team===myT,tcol=getTeamColor(first.team);
+    // Strong team color background
+    c.fillStyle=tcol+'28';c.fillRect(px+1,py+1,sz-2,sz-2);
+    c.strokeStyle=tcol+'90';c.lineWidth=1.5;c.strokeRect(px+1,py+1,sz-2,sz-2);
+    dSpr(c,first.type,px+sz/2,py+sz/2,sz,iM,tcol);
+    if(objs.length>1){c.fillStyle=tcol;c.beginPath();c.arc(px+sz-3,py+3,Math.max(4,sz*.12),0,6.3);c.fill();c.fillStyle='#fff';c.font=`bold ${Math.max(6,sz*.16)}px sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillText(objs.length,px+sz-3,py+4)}
     // HP bar
-    if (obj.hp !== undefined && obj.maxHp && obj.hp < obj.maxHp) {
-      const bw = tileZ - 4;
-      const bx = ox * tileZ + offX + 2;
-      const by = oy * tileZ + offY + tileZ - 5;
-      ctx.fillStyle = 'rgba(0,0,0,0.6)';
-      ctx.fillRect(bx, by, bw, 3);
-      ctx.fillStyle = obj.hp / obj.maxHp > 0.5 ? '#4caf6a' : obj.hp / obj.maxHp > 0.25 ? '#d49a3e' : '#d94545';
-      ctx.fillRect(bx, by, bw * (obj.hp / obj.maxHp), 3);
-    }
-  });
-
-  // Draw spawn points
-  Object.entries(allTeams).forEach(([tid, t]) => {
-    if (t.spawnX >= 0 && t.spawnY >= 0) {
-      const sx = t.spawnX, sy = t.spawnY;
-      if (sx < x0 - 2 || sx > x1 + 2 || sy < y0 - 2 || sy > y1 + 2) return;
-      const px = sx * tileZ + offX;
-      const py = sy * tileZ + offY;
-      const isMine = tid === myTeamId;
-      ctx.strokeStyle = isMine ? 'rgba(226,179,80,0.7)' : 'rgba(150,150,180,0.3)';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(px - 1, py - 1, tileZ + 2, tileZ + 2);
-      ctx.font = `${Math.max(12, tileZ * 0.7)}px serif`;
-      ctx.fillText('🏛️', px + tileZ / 2, py + tileZ / 2);
-    }
-  });
-
-  // Spawn exclusion zones (when spawning)
-  if (spawning) {
-    Object.values(allTeams).forEach(t => {
-      if (t.spawnX >= 0) {
-        const sx = t.spawnX, sy = t.spawnY;
-        // Draw radius
-        ctx.strokeStyle = 'rgba(217,69,69,0.15)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.arc(sx * tileZ + offX + tileZ/2, sy * tileZ + offY + tileZ/2, SPAWN_MIN_DIST * tileZ, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-    });
-  }
-}
-
-function renderMinimap() {
-  if (!worldTiles || !miniCtx) return;
-  const s = 140 / MAP_W; // scale
-  const ctx = miniCtx;
-  ctx.fillStyle = '#080a0d';
-  ctx.fillRect(0, 0, 140, 140);
-
-  // Simplified terrain
-  for (let y = 0; y < MAP_H; y += 2) {
-    for (let x = 0; x < MAP_W; x += 2) {
-      const tile = worldTiles[y * MAP_W + x];
-      ctx.fillStyle = TERRAIN_COLORS_LIGHT[tile];
-      ctx.fillRect(x * s, y * s, s * 2 + 0.5, s * 2 + 0.5);
-    }
-  }
-
-  // Objects
-  Object.entries(worldObjects).forEach(([key, obj]) => {
-    const [ox, oy] = key.split(',').map(Number);
-    ctx.fillStyle = obj.team === myTeamId ? '#4caf6a' : '#d94545';
-    ctx.fillRect(ox * s, oy * s, Math.max(2, s * 2), Math.max(2, s * 2));
+    const struct=objs.find(o=>PL[o.type]?.t==='s');if(struct&&struct.hp<struct.maxHp){const bw=sz-4;c.fillStyle='rgba(0,0,0,.7)';c.fillRect(px+2,py+sz-3,bw,2);c.fillStyle=struct.hp/struct.maxHp>.5?'#4caf6a':'#d94545';c.fillRect(px+2,py+sz-3,bw*(struct.hp/struct.maxHp),2)}
+    if(objs.some(o=>selected.includes(o.id))){c.strokeStyle='rgba(100,180,255,.8)';c.lineWidth=2;c.strokeRect(px-1,py-1,sz+2,sz+2)}
   });
 
   // Spawns
-  Object.entries(allTeams).forEach(([tid, t]) => {
-    if (t.spawnX >= 0) {
-      ctx.fillStyle = tid === myTeamId ? '#e2b350' : '#8888aa';
-      ctx.fillRect(t.spawnX * s - 1, t.spawnY * s - 1, 4, 4);
-    }
+  Object.entries(at).forEach(([id,t])=>{if(t.spawnX<0)return;const sx=t.spawnX,sy=t.spawnY;if(sx<x0-2||sx>x1+2||sy<y0-2||sy>y1+2)return;
+    const px=Math.floor(sx*tZ+oX),py=Math.floor(sy*tZ+oY),sz=Math.ceil(tZ),tcol=getTeamColor(id);
+    c.strokeStyle=tcol;c.lineWidth=2;c.strokeRect(px-1,py-1,sz+2,sz+2);
+    dSpr(c,'townhall',px+sz/2,py+sz/2,sz,id===myT,tcol);
+    // Campfire
+    const cfx=sx+1,cfy=sy;if(cfx<=x1+2){const cpx=Math.floor(cfx*tZ+oX),cpy=Math.floor(cfy*tZ+oY);dSpr(c,'campfire',cpx+sz/2,cpy+sz/2,sz,true);
+      if(t.campfire!==undefined){const hp=Math.max(0,t.campfire)/CFMAX;c.fillStyle='rgba(0,0,0,.7)';c.fillRect(cpx+2,cpy+sz-3,sz-4,2);c.fillStyle=hp>.5?'#ff8800':hp>.25?'#ff4400':'#ff0000';c.fillRect(cpx+2,cpy+sz-3,(sz-4)*hp,2)}}
   });
 
-  // Viewport indicator
-  const w = mapCanvas.width, h = mapCanvas.height;
-  const tileZ = TILE_PX * zoom;
-  const vx = (camX - w / 2 / zoom) * s / TILE_PX;
-  const vy = (camY - h / 2 / zoom) * s / TILE_PX;
-  const vw = (w / tileZ) * s;
-  const vh = (h / tileZ) * s;
-  ctx.strokeStyle = 'rgba(226,179,80,0.6)';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(vx, vy, vw, vh);
+  // Trade routes visualization (lines between allied spawns)
+  Object.entries(alliances).forEach(([k,v])=>{if(!v?.active)return;const[t1,t2]=k.split('|');if(!at[t1]||!at[t2])return;
+    if(at[t1].spawnX<0||at[t2].spawnX<0)return;
+    c.strokeStyle='rgba(212,168,67,.2)';c.lineWidth=1;c.setLineDash([4,4]);
+    c.beginPath();c.moveTo(at[t1].spawnX*tZ+oX+tZ/2,at[t1].spawnY*tZ+oY+tZ/2);c.lineTo(at[t2].spawnX*tZ+oX+tZ/2,at[t2].spawnY*tZ+oY+tZ/2);c.stroke();c.setLineDash([])});
+
+  if(mode==='cat'&&modeKey){const o=wo[modeKey];if(o){c.strokeStyle='rgba(255,100,50,.2)';c.lineWidth=1.5;c.setLineDash([5,4]);c.beginPath();c.arc(o.tx*tZ+oX+tZ/2,o.ty*tZ+oY+tZ/2,10*tZ,0,6.3);c.stroke();c.setLineDash([])}}
+  if(spawning){Object.values(at).forEach(t=>{if(t.spawnX>=0){c.strokeStyle='rgba(217,69,69,.12)';c.lineWidth=1;c.setLineDash([3,3]);c.beginPath();c.arc(t.spawnX*tZ+oX+tZ/2,t.spawnY*tZ+oY+tZ/2,SDIST*tZ,0,6.3);c.stroke();c.setLineDash([])}})}
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   MAP INTERACTION — PAN, ZOOM, CLICK, HOVER
-   ═══════════════════════════════════════════════════════════════ */
-function onDragStart(e) {
-  if (e.button !== 0) return;
-  isDragging = true;
-  dragStartX = e.clientX; dragStartY = e.clientY;
-  camStartX = camX; camStartY = camY;
-}
-function onDragMove(e) {
-  if (!isDragging) return;
-  const dx = e.clientX - dragStartX;
-  const dy = e.clientY - dragStartY;
-  camX = camStartX - dx / zoom;
-  camY = camStartY - dy / zoom;
-}
-function onDragEnd() { isDragging = false; }
+function renderMM(){if(!biomes||!mmctx)return;const s=160/MW,c=mmctx;c.fillStyle='#0a2040';c.fillRect(0,0,160,160);
+  for(let y=0;y<MH;y+=4)for(let x=0;x<MW;x+=4){c.fillStyle=BCOL[biomes[y*MW+x]];c.fillRect(x*s,y*s,s*4+.5,s*4+.5)}
+  Object.values(wo).forEach(o=>{c.fillStyle=getTeamColor(o.team);c.fillRect(o.tx*s,o.ty*s,Math.max(1.5,s*3),Math.max(1.5,s*3))});
+  Object.entries(at).forEach(([id,t])=>{if(t.spawnX>=0){c.fillStyle=getTeamColor(id);c.fillRect(t.spawnX*s-1,t.spawnY*s-1,4,4)}});
+  if(mcv.width>0){const tZ=TPX*zm;c.strokeStyle='rgba(226,179,80,.5)';c.lineWidth=1;c.strokeRect((camX-mcv.width/2/zm)*s/TPX,(camY-mcv.height/2/zm)*s/TPX,(mcv.width/tZ)*s,(mcv.height/tZ)*s)}}
 
-function onZoom(e) {
-  e.preventDefault();
-  const delta = e.deltaY > 0 ? 0.9 : 1.1;
-  zoom = Math.max(0.3, Math.min(3, zoom * delta));
+// ===== PLAYER TRACKER =====
+function trackPlayer(){trackTarget=$('trackSel').value}
+function updateTracker(){
+  if(!myT||!ts)return;
+  // Populate dropdown with all players from all teams
+  const sel=$('trackSel');const old=sel.value;let opts='<option value="">— select —</option>';
+  Object.entries(at).forEach(([tid,t])=>{if(t.spawnX<0)return;
+    Object.values(t.players||{}).forEach(p=>{opts+=`<option value="${tid}">${eH(p.name)} [${eH(t.name)}]</option>`})});
+  sel.innerHTML=opts;sel.value=old||trackTarget;
+  // Show arrow pointing to tracked team's spawn
+  if(!trackTarget||!at[trackTarget]||at[trackTarget].spawnX<0){$('trackArrow').textContent='—';$('trackDist').textContent='';return}
+  const tx=at[trackTarget].spawnX,ty=at[trackTarget].spawnY;
+  const dx=tx*TPX-camX,dy=ty*TPX-camY;
+  const dist=Math.floor(Math.sqrt(dx*dx+dy*dy)/TPX);
+  const angle=Math.atan2(dy,dx);
+  const arrows=['→','↘','↓','↙','←','↖','↑','↗'];
+  const idx=Math.round((angle+Math.PI)/(Math.PI/4))%8;
+  $('trackArrow').textContent=arrows[idx];
+  $('trackDist').textContent=dist+' tiles';
 }
 
-let touchDist = 0;
-function onTouchStart(e) {
-  if (e.touches.length === 1) {
-    isDragging = true;
-    dragStartX = e.touches[0].clientX; dragStartY = e.touches[0].clientY;
-    camStartX = camX; camStartY = camY;
-  } else if (e.touches.length === 2) {
-    isDragging = false;
-    touchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+// ===== INPUT =====
+function s2t(px,py){const r=mapa.getBoundingClientRect(),tZ=TPX*zm;return{tx:Math.floor((px-r.left-r.width/2+camX*zm)/tZ),ty:Math.floor((py-r.top-r.height/2+camY*zm)/tZ)}}
+function onMS(e){dSX=e.clientX;dSY=e.clientY;cSX=camX;cSY=camY;dMoved=false;
+  if(e.button===2||e.shiftKey){selDrag=true;selSX=e.clientX;selSY=e.clientY;const sb=$('selBox');sb.style.left=e.clientX+'px';sb.style.top=e.clientY+'px';sb.style.width='0';sb.style.height='0';sb.classList.remove('hidden');return}isDr=true}
+function onMM(e){if(selDrag){const sb=$('selBox'),l=Math.min(selSX,e.clientX),t=Math.min(selSY,e.clientY);sb.style.left=l+'px';sb.style.top=t+'px';sb.style.width=Math.abs(e.clientX-selSX)+'px';sb.style.height=Math.abs(e.clientY-selSY)+'px';return}if(!isDr)return;if(Math.abs(e.clientX-dSX)>3||Math.abs(e.clientY-dSY)>3)dMoved=true;camX=cSX-(e.clientX-dSX)/zm;camY=cSY-(e.clientY-dSY)/zm}
+function onMU(e){if(selDrag){selDrag=false;H('selBox');const l=Math.min(selSX,e.clientX),t=Math.min(selSY,e.clientY),r2=Math.max(selSX,e.clientX),b2=Math.max(selSY,e.clientY);if(r2-l<5&&b2-t<5){isDr=false;return}selected=[];const rect=mapa.getBoundingClientRect();Object.entries(wo).forEach(([k,o])=>{if(o.team!==myT||PL[o.type]?.t!=='u')return;const tZ=TPX*zm,oXv=rect.width/2-camX*zm,oYv=rect.height/2-camY*zm,sx=o.tx*tZ+oXv+rect.left+tZ/2,sy=o.ty*tZ+oYv+rect.top+tZ/2;if(sx>=l&&sx<=r2&&sy>=t&&sy<=b2)selected.push(k)});if(selected.length){mode='sel';SH('selBar');H('catB');H('ordB');$('selCount').textContent=selected.length;toast(selected.length+' selected','gold')}return}isDr=false;if(dMoved)return;
+  const{tx,ty}=s2t(e.clientX,e.clientY);if(tx<0||ty<0||tx>=MW||ty>=MH)return;
+  if(spawning){const b=biomes[ty*MW+tx];if(b!==B.PLAIN&&b!==B.BEACH)return toast('Plains/beach!','red');let bad=false;Object.values(at).forEach(t=>{if(t.spawnX>=0&&Math.hypot(tx-t.spawnX,ty-t.spawnY)<SDIST)bad=true});if(bad)return toast('Too close!','red');db.ref('teams/'+myT).update({spawnX:tx,spawnY:ty,campfire:CFMAX});spawning=false;H('spOv');camX=tx*TPX;camY=ty*TPX;toast('Placed!','green');return}
+  if(mode==='cat'){const o=wo[modeKey];if(o&&Math.max(Math.abs(o.tx-tx),Math.abs(o.ty-ty))<=10){const targets=Object.entries(wo).filter(([,obj])=>obj.tx===tx&&obj.ty===ty&&obj.team!==myT);targets.forEach(([ek,eo])=>{const nh=Math.max(0,(eo.hp||0)-35);if(nh<=0)db.ref('worldObjects/'+ek).remove();else db.ref('worldObjects/'+ek+'/hp').set(nh)});if(targets.length)toast('💥 35dmg!','green');Object.entries(at).forEach(([id,t])=>{if(id!==myT&&t.spawnX+1===tx&&t.spawnY===ty)db.ref('teams/'+id+'/campfire').transaction(v=>v>0?Math.max(0,v-35):0)})}else toast('Out of range','red');cancelMode();return}
+  if(mode==='sel'||mode==='ord'){const enObjs=Object.entries(wo).filter(([,o])=>o.tx===tx&&o.ty===ty&&o.team!==myT);if(enObjs.length){let td=0;selected.forEach(uid=>{const u=wo[uid];if(!u)return;const d=PL[u.type];if(!d?.dmg)return;if(Math.max(Math.abs(u.tx-tx),Math.abs(u.ty-ty))<=(d.rng||1))td+=d.dmg;else moveU(uid,tx,ty)});enObjs.forEach(([ek,eo])=>{const nh=Math.max(0,(eo.hp||0)-td);if(nh<=0)db.ref('worldObjects/'+ek).remove();else db.ref('worldObjects/'+ek+'/hp').set(nh)});if(td){toast(td+'dmg!','gold');db.ref('combatLog').push({atk:ts.name,def:enObjs[0][1].teamName||'?',dmg:td,target:PL[enObjs[0][1].type]?.n||'',destroyed:false,ts:firebase.database.ServerValue.TIMESTAMP})}}else{selected.forEach(uid=>moveU(uid,tx,ty));if(selected.length)toast('Moving '+selected.length,'gold')}
+    // Keep selection active — don't cancel! User presses Esc to deselect
+    $('selCount').textContent=selected.filter(uid=>wo[uid]).length;return}
+  if(selP){hPlace(tx,ty);return}
+  // Click own stuff
+  const myU=Object.entries(wo).filter(([,o])=>o.tx===tx&&o.ty===ty&&o.team===myT);
+  const cat=myU.find(([,o])=>o.type==='catapult');if(cat){mode='cat';modeKey=cat[0];SH('catB');return}
+  const units=myU.filter(([,o])=>PL[o.type]?.t==='u');if(units.length){selected=units.map(([k])=>k);mode='sel';SH('selBar');$('selCount').textContent=selected.length;return}
+  // Click enemy
+  const en=Object.entries(wo).filter(([,o])=>o.tx===tx&&o.ty===ty&&o.team!==myT);
+  if(en.length){let td=0;Object.entries(wo).forEach(([,o])=>{if(o.team!==myT)return;const d=PL[o.type];if(!d?.dmg||d.manual)return;if(Math.max(Math.abs(o.tx-tx),Math.abs(o.ty-ty))<=(d.rng||1))td+=d.dmg});if(td){en.forEach(([ek,eo])=>{const nh=Math.max(0,(eo.hp||0)-td);if(nh<=0)db.ref('worldObjects/'+ek).remove();else db.ref('worldObjects/'+ek+'/hp').set(nh)});toast(td+'dmg!','gold')}else toast('None in range','red')}}
+
+function cancelMode(){mode=null;modeKey=null;selected=[];H('catB');H('ordB');H('selBar')}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){cancelMode();selPlace(null)}});
+function orderAttack(){mode='ord';SH('ordB');H('selBar')}
+function orderMove(){mode='ord';SH('ordB');H('selBar')}
+
+function moveU(uid,tx,ty){const u=wo[uid];if(!u)return;const dx=Math.sign(tx-u.tx),dy=Math.sign(ty-u.ty);if(!dx&&!dy)return;const nx=u.tx+dx,ny=u.ty+dy;if(nx<0||ny<0||nx>=MW||ny>=MH)return;const b=biomes[ny*MW+nx];const d=PL[u.type];if(d?.water&&!isWater(b))return;if(d?.land&&isWater(b))return;db.ref('worldObjects/'+uid).update({tx:nx,ty:ny})}
+
+// ===== PLACEMENT =====
+function hPlace(tx,ty){if(!selP||!ts)return;const def=PL[selP];if(!def)return;const b=biomes[ty*MW+tx];
+  if(def.water&&!isWater(b))return toast('Water!','red');if(def.land&&!isLand(b))return toast('Land!','red');if(def.beach&&b!==B.BEACH)return toast('Beach!','red');if(b===B.SNOW||b===B.DEEP)return toast("Can't",'red');
+  if(def.t==='s'&&Object.values(wo).find(o=>o.tx===tx&&o.ty===ty&&PL[o.type]?.t==='s'))return toast('Structure there','red');
+  if(ts.spawnX<0)return toast('Spawn first','red');
+  // Outpost: needs 3 adjacent friendly units
+  if(def.outpost){const adjUnits=Object.values(wo).filter(o=>o.team===myT&&PL[o.type]?.t==='u'&&Math.max(Math.abs(o.tx-tx),Math.abs(o.ty-ty))<=1).length;if(adjUnits<3)return toast('Need 3 troops adjacent!','red')}
+  // Adjacency
+  let adj=Math.abs(tx-ts.spawnX)<=1&&Math.abs(ty-ts.spawnY)<=1;
+  if(!adj&&Math.abs(tx-(ts.spawnX+1))<=1&&Math.abs(ty-ts.spawnY)<=1)adj=true;
+  if(!adj)adj=Object.values(wo).some(o=>Math.max(Math.abs(o.tx-tx),Math.abs(o.ty-ty))<=1&&o.team===myT);
+  if(!adj&&def.t==='s')return toast('Adjacent!','red');
+  if(!canA(def.co))return toast('Not enough','red');
+  const scaledCo=getScaledCost(def.co);
+  let bH=0;if(def.t==='s')bH=((ts.buildings||{}).workshop||0)*10;if(def.t==='u')bH=((ts.buildings||{}).barracks||0)*5;
+  // Check alliance break debuff on structure HP
+  const debuffHP=ts?.allyBrokenUntil&&ts.allyBrokenUntil>Date.now()?0.7:1;
+  const finalHP=Math.floor((def.hp+bH)*debuffHP);
+  db.ref('teams/'+myT+'/resources').transaction(r=>{if(!r)return r;if(RK.some(k=>(r[k]||0)<(scaledCo[k]||0)))return;RK.forEach(k=>{if(scaledCo[k])r[k]-=scaledCo[k]});return r},(e,ok)=>{if(ok){const uid=selP+'_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,5);db.ref('worldObjects/'+uid).set({type:selP,team:myT,teamName:ts.name,tx,ty,hp:finalHP,maxHp:def.hp+bH,placedBy:me.name,placedAt:firebase.database.ServerValue.TIMESTAMP});toast(def.n+'!','green')}})}
+
+function selPlace(pk){selP=selP===pk?null:pk;cancelMode();renderPP(ts?.resources||{})}
+
+function onHov(e){const{tx,ty}=s2t(e.clientX,e.clientY);const tip=$('ttip');if(tx<0||ty<0||tx>=MW||ty>=MH){tip.classList.add('hidden');return}
+  const b=biomes[ty*MW+tx];let h=`<div class="ttt">${BNAME[b]||'?'} (${tx},${ty})</div>`;
+  const here=Object.values(wo).filter(o=>o.tx===tx&&o.ty===ty);if(here.length)h+='<div class="tti">'+here.map(o=>`${PL[o.type]?.n||o.type} ${o.hp}/${o.maxHp} [${eH(o.teamName||'')}]`).join('<br>')+'</div>';
+  tip.innerHTML=h;tip.style.left=(e.clientX+10)+'px';tip.style.top=(e.clientY+10)+'px';tip.classList.remove('hidden')}
+
+// ===== EVENTS =====
+setInterval(()=>{if(!myT)return;db.ref('globalEvent').transaction(ev=>{const n=Date.now();if(ev?.endsAt>n)return;if(n-((ev?.endsAt)||0)<300000+Math.random()*300000)return;const d=EVS[Math.floor(Math.random()*EVS.length)];return{id:d.id,endsAt:n+d.s*1000,startedAt:n}})},60000);
+setInterval(()=>{if(!ae)return;const r=Math.max(0,ae.endsAt-Date.now());if(r<=0){ae=null;H('evB');return}$('evT').textContent=Math.floor(r/60000)+':'+String(Math.floor(r%60000/1000)).padStart(2,'0')},1000);
+
+// ===== OFFLINE =====
+function chkOff(d){/* called on first team load */}
+window.addEventListener('beforeunload',()=>localStorage.setItem('gic_ls',Date.now()+''));
+
+// ===== CAMPFIRE: decay offline, regen online =====
+setInterval(()=>{if(!myT||!ts)return;const anyOn=Object.values(ts.players||{}).some(p=>p.online);
+  if(!anyOn&&ts.campfire>0)db.ref('teams/'+myT+'/campfire').transaction(v=>v>0?v-1:0);
+  else if(anyOn&&(ts.campfire||0)<CFMAX)db.ref('teams/'+myT+'/campfire').transaction(v=>v===null?v:Math.min(CFMAX,v+2));
+},30000);
+
+// ===== AUTO-COMBAT =====
+setInterval(()=>{if(!myT)return;Object.entries(wo).forEach(([k,o])=>{if(o.team!==myT)return;const d=PL[o.type];if(!d?.dmg||d.manual)return;let best=null,bd=999;Object.entries(wo).forEach(([ek,eo])=>{if(eo.team===myT)return;const dist=Math.max(Math.abs(o.tx-eo.tx),Math.abs(o.ty-eo.ty));if(dist<bd&&dist<=(d.rng||1)){best={k:ek,o:eo};bd=dist}});if(best){const nh=Math.max(0,(best.o.hp||0)-d.dmg);if(nh<=0)db.ref('worldObjects/'+best.k).remove();else db.ref('worldObjects/'+best.k+'/hp').set(nh)}})},5000);
+
+// ===== SIDEBAR =====
+function renderSB(){if(!ts)return;const r=ts.resources||{},b=ts.buildings||{},rates=cRates(b),ps=n=>(n/(TICK/1000)).toFixed(1);
+  $('gC').textContent=ts.name||'—';$('gM').textContent='👑 '+me.name;
+  $('gCF').textContent='🔥'+(ts.campfire||0)+'/'+CFMAX;$('gCF').style.color=(ts.campfire||0)>CFMAX*.3?'#ff8800':'#ff2200';
+  RK.forEach(k=>{$('r'+RID[k]).textContent=fN(r[k]||0);$('rr'+RID[k]).textContent='+'+ps(rates[k]||0)});
+  renderPP(r);renderBP(r,b);renderRP();renderAP();renderTP()}
+
+function renderPP(res){
+  const el=$('sp-place'),bl=ts?.buildings||{},cats={econ:'⚙️Econ',def:'🛡️Def',mil:'⚔️Mil',nav:'⚓Nav'};
+  let h='<p style="font-size:.58rem;color:var(--txtd);margin-bottom:3px">Select→click map. Shift-drag select troops.</p>';
+  ['econ','def','mil','nav'].forEach(cat=>{
+    const items=Object.entries(PL).filter(([,d])=>d.cat===cat);if(!items.length)return;
+    h+=`<p style="font-size:.52rem;text-transform:uppercase;color:var(--txtm);margin:4px 0 2px">${cats[cat]}</p><div class="pgrid">`;
+    items.forEach(([pk,def])=>{const sel=selP===pk,sc2=getScaledCost(def.co),cs=RK.filter(k=>sc2[k]).map(k=>`${RI[k]}${sc2[k]}`).join(' ');
+      h+=`<div class="pbtn ${sel?'sel':''}" onclick="selPlace('${pk}')"><canvas width="22" height="22" data-s="${pk}"></canvas><span class="pn">${def.n}</span><span class="pc">${cs}</span>${def.dmg?`<span class="pc">D${def.dmg}${def.rng?' R'+def.rng:''}</span>`:''}${def.pr?`<span class="pc" style="color:#7ec87e">${Object.entries(def.pr).map(([k,v])=>'+'+v+k[0]).join(' ')}</span>`:''}${def.outpost?'<span class="pc" style="color:var(--blu)">Need 3 troops</span>':''}${def.trade?'<span class="pc" style="color:var(--gold)">Alliance bonus</span>':''}</div>`});
+    h+='</div>'});
+  if(selP)h+=`<button class="btn btn-outline btn-xs" style="width:100%;margin-top:3px" onclick="selPlace(null)">Cancel</button>`;
+  el.innerHTML=h;el.querySelectorAll('canvas[data-s]').forEach(cv=>{dSpr(cv.getContext('2d'),cv.dataset.s,11,11,22,true,getTeamColor(myT))})}
+
+function renderBP(res,blds){$('sp-upg').innerHTML=Object.entries(UPG).map(([bk,def])=>{const l=blds[bk]||0,c=gUC(bk,l),af=RK.every(k=>(res[k]||0)>=(c[k]||0));const ch=RK.filter(k=>c[k]>0).map(k=>`<span class="cc ${(res[k]||0)<c[k]?'no':''}">${RI[k]}${fN(c[k])}</span>`).join('');return`<div class="bc"><div class="bc-t"><span class="bc-n">${def.n}</span><div class="bc-l">Lv<b>${l}</b></div></div><div class="bc-d">${def.d}</div><div class="bc-c">${ch}</div><button class="btn btn-gold btn-xs" style="width:100%" ${af?'':'disabled'} onclick="doUpg('${bk}')">→Lv${l+1}</button></div>`}).join('')}
+
+function renderRP(){const el=$('sp-rank'),teams=Object.entries(at).map(([id,t])=>({id,name:t.name,p:t.players?Object.keys(t.players).length:0,pw:cPow({...t,_id:id}),camp:t.campfire||0,col:getTeamColor(id)})).sort((a,b)=>b.pw-a.pw);el.innerHTML=teams.map((t,i)=>`<div style="display:flex;align-items:center;padding:4px 5px;border-radius:var(--r);margin-bottom:2px;font-size:.7rem;${t.id===myT?'background:rgba(226,179,80,.06)':''}"><span style="width:16px;font-weight:700;color:${i<3?['var(--gold)','#c0c0c0','#cd7f32'][i]:'var(--txtm)'}">${i+1}</span><span style="width:8px;height:8px;border-radius:50%;background:${t.col};margin-right:4px;flex-shrink:0"></span><span style="flex:1;${t.id===myT?'color:var(--gold);font-weight:600':''}">${eH(t.name)} <span style="font-size:.5rem;color:var(--txtm)">(${t.p})</span></span><span style="font-size:.6rem;color:var(--goldd);font-weight:600">⚡${fN(t.pw)}</span></div>`).join('')||'<p style="color:var(--txtm);text-align:center;padding:12px">None</p>'}
+
+// ===== ALLIANCES =====
+function renderAP(){
+  const el=$('sp-ally');
+  // Show existing alliances
+  const myAlliances=Object.entries(alliances).filter(([k,v])=>k.includes(myT)&&v?.active);
+  let h='<p style="font-size:.6rem;color:var(--txtd);margin-bottom:4px"><b>Alliances</b> — Trade posts +2 gold when allied. Breaking weakens buildings 30% for 5min.</p>';
+  h+='<p style="font-size:.52rem;color:var(--txtm);margin:3px 0">Active:</p>';
+  if(myAlliances.length){
+    h+=myAlliances.map(([k,v])=>{const other=k.split('|').find(t=>t!==myT);const tn=at[other]?.name||'?';const otherOnline=Object.values(at[other]?.players||{}).some(p=>p.online);
+      return`<div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg3);border-radius:var(--r);padding:4px 6px;margin-bottom:3px;font-size:.68rem"><span style="color:var(--grn)">🤝 ${eH(tn)}</span>${otherOnline?`<button class="btn btn-outline btn-xs" style="font-size:.55rem;padding:2px 6px;color:var(--red);border-color:var(--red)" onclick="breakAlliance('${k}')">Break</button>`:'<span style="font-size:.5rem;color:var(--txtm)">offline</span>'}</div>`}).join('');
+  }else h+='<p style="font-size:.6rem;color:var(--txtm);padding:4px">None</p>';
+  // Propose alliance
+  h+='<p style="font-size:.52rem;color:var(--txtm);margin:6px 0 2px">Propose to:</p>';
+  const otherTeams=Object.entries(at).filter(([id])=>id!==myT&&!alliances[[myT,id].sort().join('|')]?.active);
+  h+=otherTeams.map(([id,t])=>`<div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg3);border-radius:var(--r);padding:3px 6px;margin-bottom:2px;font-size:.65rem"><span>${eH(t.name)}</span><button class="btn btn-gold btn-xs" style="font-size:.52rem;padding:2px 5px" onclick="proposeAlliance('${id}')">Propose</button></div>`).join('')||'<p style="font-size:.55rem;color:var(--txtm)">No others</p>';
+  // Pending proposals
+  const pending=Object.entries(alliances).filter(([k,v])=>k.includes(myT)&&v?.pending&&v.proposer!==myT);
+  if(pending.length){
+    h+='<p style="font-size:.52rem;color:var(--gold);margin:6px 0 2px">Incoming:</p>';
+    h+=pending.map(([k,v])=>{const other=k.split('|').find(t=>t!==myT);return`<div style="display:flex;justify-content:space-between;align-items:center;background:rgba(226,179,80,.06);border-radius:var(--r);padding:3px 6px;margin-bottom:2px;font-size:.65rem"><span>${eH(at[other]?.name||'?')}</span><button class="btn btn-gold btn-xs" style="font-size:.52rem;padding:2px 5px" onclick="acceptAlliance('${k}')">Accept</button></div>`}).join('');
   }
-  e.preventDefault();
-}
-function onTouchMove(e) {
-  if (e.touches.length === 1 && isDragging) {
-    camX = camStartX - (e.touches[0].clientX - dragStartX) / zoom;
-    camY = camStartY - (e.touches[0].clientY - dragStartY) / zoom;
-  } else if (e.touches.length === 2) {
-    const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-    zoom = Math.max(0.3, Math.min(3, zoom * (d / touchDist)));
-    touchDist = d;
-  }
-  e.preventDefault();
-}
-function onTouchEnd() { isDragging = false; }
-
-function screenToTile(cx, cy) {
-  const rect = mapArea.getBoundingClientRect();
-  const tileZ = TILE_PX * zoom;
-  const offX = rect.width / 2 - camX * zoom;
-  const offY = rect.height / 2 - camY * zoom;
-  const tx = Math.floor((cx - rect.left - offX) / tileZ);
-  const ty = Math.floor((cy - rect.top - offY) / tileZ);
-  return { tx, ty };
+  el.innerHTML=h;
 }
 
-function onMapClick(e) {
-  // Ignore if we just dragged
-  if (Math.abs(e.clientX - dragStartX) > 5 || Math.abs(e.clientY - dragStartY) > 5) return;
-
-  const { tx, ty } = screenToTile(e.clientX, e.clientY);
-  if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return;
-
-  if (spawning) {
-    handleSpawn(tx, ty);
-    return;
-  }
-
-  if (selectedPlace) {
-    handlePlace(tx, ty);
-    return;
-  }
-
-  // Attack enemy object?
-  const key = tx + ',' + ty;
-  const obj = worldObjects[key];
-  if (obj && obj.team !== myTeamId) {
-    handleAttack(tx, ty, obj);
-  }
+function proposeAlliance(otherId){
+  const key=[myT,otherId].sort().join('|');
+  db.ref('alliances/'+key).set({pending:true,proposer:myT,proposedAt:firebase.database.ServerValue.TIMESTAMP});
+  toast('Proposed alliance!','gold');
+}
+function acceptAlliance(key){
+  db.ref('alliances/'+key).update({active:true,pending:false,acceptedAt:firebase.database.ServerValue.TIMESTAMP});
+  toast('Alliance formed! 🤝','green');
+}
+function breakAlliance(key){
+  const other=key.split('|').find(t=>t!==myT);
+  // Check other team is online
+  const otherOnline=Object.values(at[other]?.players||{}).some(p=>p.online);
+  if(!otherOnline)return toast('Can only break when they are online!','red');
+  db.ref('alliances/'+key).remove();
+  // Apply 5 min debuff to BOTH teams
+  const debuffUntil=Date.now()+5*60*1000;
+  db.ref('teams/'+myT+'/allyBrokenUntil').set(debuffUntil);
+  db.ref('teams/'+other+'/allyBrokenUntil').set(debuffUntil);
+  toast('Alliance broken! Buildings 30% weaker for 5min.','red');
 }
 
-function onMapHover(e) {
-  const { tx, ty } = screenToTile(e.clientX, e.clientY);
-  const tip = $('tile-tip');
+function renderTP(){const el=$('sp-team'),pl=ts?.players||{};const en=Object.values(pl).sort((a,b)=>(b.lastSeen||0)-(a.lastSeen||0));const anyOn=en.some(p=>p.online);
+  const debuff=ts?.allyBrokenUntil&&ts.allyBrokenUntil>Date.now();
+  el.innerHTML='<p style="font-size:.55rem;color:var(--txtm);margin-bottom:2px;text-transform:uppercase">Members'+(anyOn?' · <span style="color:var(--grn)">ONLINE</span>':'')+(debuff?' · <span style="color:var(--red)">DEBUFFED</span>':'')+'</p>'+en.map(p=>`<div style="display:flex;align-items:center;gap:4px;padding:3px 5px;font-size:.7rem;${p.online?'':'opacity:.5'}"><span style="width:5px;height:5px;border-radius:50%;background:${p.online?'var(--grn)':'var(--txtm)'}"></span>${eH(p.name)}${p.name===me.name?' (you)':''}</div>`).join('')}
 
-  if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) { tip.classList.add('hidden'); return; }
+function stab(t){document.querySelectorAll('.stab').forEach(b=>b.classList.toggle('on',b.dataset.t===t));document.querySelectorAll('.spnl').forEach(p=>p.classList.toggle('on',p.id==='sp-'+t))}
 
-  const key = tx + ',' + ty;
-  const obj = worldObjects[key];
-  const tile = worldTiles[ty * MAP_W + tx];
-  const terrName = ['Void','Grassland','Forest','Mountain','Water'][tile] || '?';
-
-  let html = `<div class="tt-title">${terrName} (${tx}, ${ty})</div>`;
-  if (obj) {
-    const def = PLACEABLES[obj.type] || {};
-    const teamName = obj.teamName || obj.team;
-    html += `<div class="tt-info">${def.icon || ''} ${def.name || obj.type}<br>HP: ${obj.hp}/${obj.maxHp}<br>Owner: ${escH(teamName)}</div>`;
-  }
-  if (selectedPlace) {
-    html += `<div style="margin-top:4px;color:var(--gold);font-size:0.72rem;">Click to place ${PLACEABLES[selectedPlace]?.name || ''}</div>`;
-  }
-
-  tip.innerHTML = html;
-  tip.style.left = (e.clientX + 14) + 'px';
-  tip.style.top = (e.clientY + 14) + 'px';
-  tip.classList.remove('hidden');
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   SPAWN PLACEMENT
-   ═══════════════════════════════════════════════════════════════ */
-function handleSpawn(tx, ty) {
-  // Validate terrain
-  const tile = worldTiles[ty * MAP_W + tx];
-  if (tile === T.WATER || tile === T.MOUNTAIN) {
-    toast('Cannot spawn on water or mountains','red');
-    return;
-  }
-
-  // Check distance from other spawns
-  let tooClose = false;
-  Object.values(allTeams).forEach(t => {
-    if (t.spawnX >= 0) {
-      const d = Math.hypot(tx - t.spawnX, ty - t.spawnY);
-      if (d < SPAWN_MIN_DIST) tooClose = true;
-    }
-  });
-  if (tooClose) {
-    toast('Too close to another civilization! (Min ' + SPAWN_MIN_DIST + ' tiles)','red');
-    return;
-  }
-
-  // Set spawn
-  db.ref('teams/' + myTeamId).update({ spawnX: tx, spawnY: ty });
-  spawning = false;
-  hide('spawn-overlay');
-  camX = tx * TILE_PX;
-  camY = ty * TILE_PX;
-  toast('Town Hall placed! Your civilization begins here.','green');
-}
-
-function cancelSpawn() {
-  spawning = false;
-  hide('spawn-overlay');
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   OBJECT PLACEMENT
-   Must be adjacent to an existing friendly structure or spawn
-   ═══════════════════════════════════════════════════════════════ */
-function handlePlace(tx, ty) {
-  if (!selectedPlace || !teamSnap) return;
-
-  const def = PLACEABLES[selectedPlace];
-  if (!def) return;
-
-  // Validate terrain
-  const tile = worldTiles[ty * MAP_W + tx];
-  if (tile === T.WATER) { toast('Cannot place on water','red'); return; }
-  if (tile === T.MOUNTAIN && def.type !== 'structure') { toast('Units cannot go on mountains','red'); return; }
-
-  // Check not occupied
-  const key = tx + ',' + ty;
-  if (worldObjects[key]) { toast('Tile already occupied','red'); return; }
-
-  // Check adjacency (must be next to friendly object or spawn)
-  const sx = teamSnap.spawnX, sy = teamSnap.spawnY;
-  if (sx < 0) { toast('Place your Town Hall first','red'); return; }
-
-  let adjacent = false;
-  // Adjacent to spawn?
-  if (Math.abs(tx - sx) <= 1 && Math.abs(ty - sy) <= 1) adjacent = true;
-
-  // Adjacent to friendly object?
-  if (!adjacent) {
-    for (let dy = -1; dy <= 1; dy++) {
-      for (let dx = -1; dx <= 1; dx++) {
-        if (dx === 0 && dy === 0) continue;
-        const nk = (tx + dx) + ',' + (ty + dy);
-        const nObj = worldObjects[nk];
-        if (nObj && nObj.team === myTeamId) { adjacent = true; break; }
-      }
-      if (adjacent) break;
-    }
-  }
-
-  if (!adjacent) { toast('Must place adjacent to your structures','red'); return; }
-
-  // Check cost
-  if (!canAfford(def.cost)) { toast('Not enough resources','red'); return; }
-
-  // Bonus HP from upgrades
-  let bonusHp = 0;
-  if (def.type === 'structure') bonusHp = ((teamSnap.buildings || {}).workshop || 0) * 10;
-  if (def.type === 'unit') bonusHp = ((teamSnap.buildings || {}).barracks || 0) * 5;
-  const totalHp = def.hp + bonusHp;
-
-  // Deduct cost & place
-  db.ref('teams/' + myTeamId + '/resources').transaction(r => {
-    if (!r) return r;
-    const cost = def.cost;
-    if (RES_KEYS.some(k => (r[k] || 0) < (cost[k] || 0))) return;
-    RES_KEYS.forEach(k => { if (cost[k]) r[k] -= cost[k]; });
-    return r;
-  }, (err, committed) => {
-    if (committed) {
-      db.ref('worldObjects/' + key).set({
-        type: selectedPlace,
-        team: myTeamId,
-        teamName: teamSnap.name,
-        hp: totalHp,
-        maxHp: totalHp,
-        placedBy: me.name,
-        placedAt: firebase.database.ServerValue.TIMESTAMP,
-      });
-      toast(def.name + ' placed!','green');
-    } else if (!err) {
-      toast('Not enough resources','red');
-    }
-  });
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   COMBAT — Click enemy objects to attack with nearby units
-   ═══════════════════════════════════════════════════════════════ */
-function handleAttack(tx, ty, targetObj) {
-  if (!myTeamId) return;
-
-  // Find my nearby units that can attack
-  let totalDmg = 0;
-  const attackers = [];
-
-  Object.entries(worldObjects).forEach(([k, obj]) => {
-    if (obj.team !== myTeamId) return;
-    const def = PLACEABLES[obj.type];
-    if (!def || !def.dmg) return;
-    const [ox, oy] = k.split(',').map(Number);
-    const dist = Math.max(Math.abs(ox - tx), Math.abs(oy - ty)); // Chebyshev
-    const range = def.range || 1;
-    if (dist <= range) {
-      totalDmg += def.dmg;
-      attackers.push({ key: k, obj, def, ox, oy });
-    }
-  });
-
-  if (totalDmg === 0) {
-    toast('No units in range to attack','red');
-    return;
-  }
-
-  // Apply damage
-  const targetKey = tx + ',' + ty;
-  const newHp = Math.max(0, (targetObj.hp || 0) - totalDmg);
-
-  if (newHp <= 0) {
-    // Destroy
-    db.ref('worldObjects/' + targetKey).remove();
-    toast('Destroyed enemy ' + (PLACEABLES[targetObj.type]?.name || 'object') + '!','green');
-  } else {
-    db.ref('worldObjects/' + targetKey + '/hp').set(newHp);
-    toast('Attacked for ' + totalDmg + ' damage!','gold');
-  }
-
-  // Log combat
-  db.ref('combatLog').push({
-    atk: teamSnap.name,
-    def: targetObj.teamName || '?',
-    dmg: totalDmg,
-    target: PLACEABLES[targetObj.type]?.name || targetObj.type,
-    destroyed: newHp <= 0,
-    ts: firebase.database.ServerValue.TIMESTAMP,
-  });
-
-  // Counter-attack from defending structures
-  let counterDmg = 0;
-  Object.entries(worldObjects).forEach(([k, obj]) => {
-    if (obj.team === myTeamId) return;
-    if (obj.team !== targetObj.team) return;
-    const def = PLACEABLES[obj.type];
-    if (!def || !def.dmg) return;
-    const [ox, oy] = k.split(',').map(Number);
-    // Check if any of our attackers are in range
-    attackers.forEach(a => {
-      const dist = Math.max(Math.abs(ox - a.ox), Math.abs(oy - a.oy));
-      if (dist <= (def.range || 1)) {
-        counterDmg += Math.floor(def.dmg * 0.5);
-      }
-    });
-  });
-
-  if (counterDmg > 0 && attackers.length > 0) {
-    // Distribute counter damage to first attacker
-    const aKey = attackers[0].key;
-    const aObj = worldObjects[aKey];
-    if (aObj) {
-      const aNewHp = Math.max(0, (aObj.hp || 0) - counterDmg);
-      if (aNewHp <= 0) {
-        db.ref('worldObjects/' + aKey).remove();
-      } else {
-        db.ref('worldObjects/' + aKey + '/hp').set(aNewHp);
-      }
-    }
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   COMBAT LOG RENDERING
-   ═══════════════════════════════════════════════════════════════ */
-function renderCombatLog(log) {
-  const el = $('combat-log');
-  if (!log) { el.classList.add('hidden'); return; }
-  el.classList.remove('hidden');
-
-  const entries = Object.values(log).sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 20);
-  el.innerHTML = entries.map(e => {
-    const verb = e.destroyed ? 'destroyed' : 'attacked';
-    return `<div class="cl-entry"><span class="cl-atk">${escH(e.atk)}</span> ${verb} <span class="cl-def">${escH(e.def)}</span>'s ${e.target} for <span class="cl-gold">${e.dmg}</span> dmg</div>`;
-  }).join('');
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   GLOBAL EVENTS
-   ═══════════════════════════════════════════════════════════════ */
-function maybeSpawnEvent() {
-  db.ref('globalEvent').transaction(ev => {
-    const now = Date.now();
-    if (ev && ev.endsAt > now) return;
-    const last = (ev && ev.endsAt) || 0;
-    const gap = 480000 + Math.random() * 420000; // 8-15 min
-    if (now - last < gap) return;
-    const def = EVENTS[Math.floor(Math.random() * EVENTS.length)];
-    return { id: def.id, endsAt: now + def.dur * 1000, startedAt: now };
-  });
-}
-setInterval(maybeSpawnEvent, 60000);
-
-function renderEvent() {
-  if (!activeEvent) return;
-  $('ev-name').textContent = activeEvent.name;
-  $('ev-desc').textContent = activeEvent.desc;
-}
-
-function updateEventTimer() {
-  if (!activeEvent) return;
-  const rem = Math.max(0, activeEvent.endsAt - Date.now());
-  if (rem <= 0) { activeEvent = null; hide('ev-banner'); return; }
-  $('ev-timer').textContent = Math.floor(rem / 60000) + ':' + String(Math.floor((rem % 60000) / 1000)).padStart(2, '0');
-}
-setInterval(updateEventTimer, 1000);
-
-/* ═══════════════════════════════════════════════════════════════
-   OFFLINE PROGRESS
-   ═══════════════════════════════════════════════════════════════ */
-function checkOffline(data) {
-  const ls = parseInt(localStorage.getItem('gic_lastSeen') || '0');
-  if (!ls) { localStorage.setItem('gic_lastSeen', Date.now().toString()); return; }
-  const now = Date.now();
-  const elapsed = Math.min(now - ls, 86400000);
-  if (elapsed < 60000) { localStorage.setItem('gic_lastSeen', now.toString()); return; }
-
-  const rates = calcRates(data.buildings || {});
-  const ticks = Math.floor(elapsed / TICK_MS);
-  const gains = {};
-  RES_KEYS.forEach(k => { gains[k] = Math.floor((rates[k] || 0) * ticks); });
-
-  db.ref('teams/' + myTeamId + '/resources').transaction(r => {
-    if (!r) return r;
-    RES_KEYS.forEach(k => { r[k] = (r[k] || 0) + gains[k]; });
-    return r;
-  });
-
-  const dur = formatDur(elapsed);
-  $('off-rows').innerHTML = `<p style="color:var(--txt-dim);font-size:0.8rem;">Away: ${dur}</p>` +
-    RES_KEYS.map(k => `<div class="off-row"><span>${RES_ICONS[k]} ${k[0].toUpperCase()+k.slice(1)}</span><span class="ov ${RES_CSS[k]}">+${fmtN(gains[k])}</span></div>`).join('');
-  show('off-modal');
-  localStorage.setItem('gic_lastSeen', now.toString());
-}
-
-function formatDur(ms) {
-  const s = Math.floor(ms/1000);
-  if (s < 60) return s + 's';
-  const m = Math.floor(s/60);
-  if (m < 60) return m + 'min';
-  const h = Math.floor(m/60);
-  return h + 'h ' + (m%60) + 'min';
-}
-
-window.addEventListener('beforeunload', () => localStorage.setItem('gic_lastSeen', Date.now().toString()));
-
-/* ═══════════════════════════════════════════════════════════════
-   SIDEBAR RENDERING
-   ═══════════════════════════════════════════════════════════════ */
-function renderSidebar() {
-  if (!teamSnap) return;
-  const r = teamSnap.resources || {};
-  const b = teamSnap.buildings || {};
-  const rates = calcRates(b);
-  const ps = n => (n / (TICK_MS / 1000)).toFixed(1);
-
-  $('g-civ-name').textContent = teamSnap.name || '—';
-  $('g-player-name').textContent = '👑 ' + me.name;
-
-  // Resources
-  RES_KEYS.forEach(k => {
-    $('r-' + k).textContent = fmtN(r[k] || 0);
-    $('rr-' + k).textContent = '+' + ps(rates[k] || 0) + '/s';
-  });
-
-  // Build tab
-  renderBuildPanel(r, b);
-  renderPlacePanel(r);
-  renderRankPanel();
-  renderTeamPanel();
-}
-
-function renderBuildPanel(res, blds) {
-  const el = $('sp-build');
-  el.innerHTML = Object.entries(BUILDINGS).map(([bk, def]) => {
-    const lvl = blds[bk] || 0;
-    const cost = getUpgradeCost(bk, lvl);
-    const afford = RES_KEYS.every(k => (res[k] || 0) >= (cost[k] || 0));
-    const costHtml = RES_KEYS.filter(k => cost[k] > 0).map(k =>
-      `<span class="cc ${(res[k]||0)<cost[k]?'no':''}">${RES_ICONS[k]}${fmtN(cost[k])}</span>`
-    ).join('');
-
-    let extra = '';
-    if (bk === 'barracks') extra = `<br><em style="color:var(--txt-muted);font-size:0.7rem;">+5 HP per unit per level</em>`;
-    if (bk === 'workshop') extra = `<br><em style="color:var(--txt-muted);font-size:0.7rem;">+10 HP per wall/tower per level</em>`;
-
-    return `<div class="bld-card">
-      <div class="bld-top"><div><span class="bld-icon">${def.icon}</span><span class="bld-name">${def.name}</span></div><div class="bld-lvl">Lv <b>${lvl}</b></div></div>
-      <div class="bld-desc">${def.desc}${extra}</div>
-      <div class="bld-costs">${costHtml}</div>
-      <button class="btn btn-gold btn-xs" style="width:100%" ${afford?'':'disabled'} onclick="doUpgrade('${bk}')">Upgrade → Lv ${lvl+1}</button>
-    </div>`;
-  }).join('');
-}
-
-function renderPlacePanel(res) {
-  const el = $('sp-place');
-  const blds = teamSnap?.buildings || {};
-  el.innerHTML = '<p style="font-size:0.75rem;color:var(--txt-dim);margin-bottom:8px;">Select an item, then click the map to place it adjacent to your structures.</p>' +
-    '<div class="place-grid">' +
-    Object.entries(PLACEABLES).map(([pk, def]) => {
-      const sel = selectedPlace === pk;
-      const costStr = RES_KEYS.filter(k => def.cost[k]).map(k => `${RES_ICONS[k]}${def.cost[k]}`).join(' ');
-      let bonusHp = 0;
-      if (def.type === 'structure') bonusHp = (blds.workshop || 0) * 10;
-      if (def.type === 'unit') bonusHp = (blds.barracks || 0) * 5;
-      const hpStr = bonusHp > 0 ? `${def.hp}+${bonusHp}` : `${def.hp}`;
-      return `<div class="place-btn ${sel?'selected':''}" onclick="selectPlace('${pk}')">
-        <span class="pi">${def.icon}</span>
-        <span class="pn">${def.name}</span>
-        <span class="pc">${costStr}</span>
-        <span class="pc">HP: ${hpStr}${def.dmg?' · DMG:'+def.dmg:''}</span>
-      </div>`;
-    }).join('') + '</div>' +
-    (selectedPlace ? `<button class="btn btn-outline btn-xs" style="width:100%;margin-top:8px;" onclick="selectPlace(null)">Cancel Placement</button>` : '');
-}
-
-function selectPlace(pk) {
-  selectedPlace = selectedPlace === pk ? null : pk;
-  renderPlacePanel(teamSnap?.resources || {});
-}
-
-function renderRankPanel() {
-  const el = $('sp-rank');
-  const teams = Object.entries(allTeams).map(([id, t]) => ({
-    id, name: t.name,
-    players: t.players ? Object.keys(t.players).length : 0,
-    power: calcPower({...t, _id: id})
-  })).sort((a, b) => b.power - a.power);
-
-  if (!teams.length) { el.innerHTML = '<p style="color:var(--txt-muted);text-align:center;padding:20px;">No civs yet.</p>'; return; }
-  el.innerHTML = teams.map((t, i) => {
-    const rk = i + 1;
-    const rc = rk === 1 ? 'r1' : rk === 2 ? 'r2' : rk === 3 ? 'r3' : '';
-    const mine = t.id === myTeamId;
-    return `<div class="lb-row ${mine?'mine':''}"><span class="lb-rank ${rc}">${rk}</span><span class="lb-name">${escH(t.name)} <span style="color:var(--txt-muted);font-size:0.72rem;">(${t.players})</span></span><span class="lb-pow">⚡${fmtN(t.power)}</span></div>`;
-  }).join('');
-}
-
-function renderTeamPanel() {
-  const el = $('sp-team');
-  const players = teamSnap?.players || {};
-  const now = Date.now();
-  const entries = Object.values(players).sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
-  if (!entries.length) { el.innerHTML = '<p style="color:var(--txt-muted);text-align:center;padding:20px;">No players.</p>'; return; }
-  el.innerHTML = '<p style="font-size:0.72rem;color:var(--txt-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;">Team Members</p>' +
-    entries.map(p => {
-      const on = (now - (p.lastSeen || 0)) < 60000;
-      const isMe = p.name === me.name;
-      return `<div class="pl-item"><span class="pl-dot ${on?'on':'off'}"></span><span>${escH(p.name)}${isMe?' (you)':''}</span></div>`;
-    }).join('');
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   SIDEBAR TAB SWITCHING
-   ═══════════════════════════════════════════════════════════════ */
-function sideTab(t) {
-  document.querySelectorAll('.side-tab').forEach(b => b.classList.toggle('active', b.dataset.t === t));
-  document.querySelectorAll('.side-panel').forEach(p => p.classList.toggle('active', p.id === 'sp-' + t));
-  if (t === 'rank') renderRankPanel();
-  if (t === 'team') renderTeamPanel();
-  if (t === 'place') renderPlacePanel(teamSnap?.resources || {});
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   AUTO-COMBAT TICK — units auto-attack nearby enemies every 5s
-   ═══════════════════════════════════════════════════════════════ */
-setInterval(() => {
-  if (!myTeamId || !teamSnap) return;
-
-  // Find my units
-  const myUnits = [];
-  const enemies = [];
-  Object.entries(worldObjects).forEach(([k, obj]) => {
-    const [x, y] = k.split(',').map(Number);
-    const def = PLACEABLES[obj.type];
-    if (!def) return;
-    if (obj.team === myTeamId && def.dmg) myUnits.push({ k, x, y, obj, def });
-    if (obj.team !== myTeamId) enemies.push({ k, x, y, obj, def });
-  });
-
-  if (!myUnits.length || !enemies.length) return;
-
-  // Each unit attacks nearest enemy in range
-  myUnits.forEach(u => {
-    let nearest = null, nearDist = 999;
-    enemies.forEach(e => {
-      const d = Math.max(Math.abs(u.x - e.x), Math.abs(u.y - e.y));
-      if (d < nearDist && d <= (u.def.range || 1)) {
-        nearest = e;
-        nearDist = d;
-      }
-    });
-    if (!nearest) return;
-
-    const newHp = Math.max(0, (nearest.obj.hp || 0) - u.def.dmg);
-    if (newHp <= 0) {
-      db.ref('worldObjects/' + nearest.k).remove();
-    } else {
-      db.ref('worldObjects/' + nearest.k + '/hp').set(newHp);
-    }
-  });
-}, 5000);
-
-/* ═══════════════════════════════════════════════════════════════
-   UNIT MOVEMENT TICK — units move toward nearest enemy every 4s
-   ═══════════════════════════════════════════════════════════════ */
-setInterval(() => {
-  if (!myTeamId || !teamSnap) return;
-
-  const myUnits = [];
-  const enemies = [];
-  Object.entries(worldObjects).forEach(([k, obj]) => {
-    const [x, y] = k.split(',').map(Number);
-    const def = PLACEABLES[obj.type];
-    if (!def) return;
-    if (obj.team === myTeamId && def.speed) myUnits.push({ k, x, y, obj, def });
-    if (obj.team !== myTeamId) enemies.push({ k, x, y, obj, def });
-  });
-
-  if (!myUnits.length || !enemies.length) return;
-
-  myUnits.forEach(u => {
-    // Already in range of something? Don't move
-    const inRange = enemies.some(e => Math.max(Math.abs(u.x - e.x), Math.abs(u.y - e.y)) <= (u.def.range || 1));
-    if (inRange) return;
-
-    // Find nearest enemy
-    let nearest = null, nearDist = 999;
-    enemies.forEach(e => {
-      const d = Math.hypot(u.x - e.x, u.y - e.y);
-      if (d < nearDist) { nearest = e; nearDist = d; }
-    });
-    if (!nearest) return;
-
-    // Move one step toward
-    const dx = Math.sign(nearest.x - u.x);
-    const dy = Math.sign(nearest.y - u.y);
-    const nx = u.x + dx, ny = u.y + dy;
-    const nk = nx + ',' + ny;
-
-    // Check passable
-    if (nx < 0 || ny < 0 || nx >= MAP_W || ny >= MAP_H) return;
-    if (worldTiles[ny * MAP_W + nx] === T.WATER) return;
-    if (worldObjects[nk]) return;
-
-    // Must stay adjacent to friendly territory
-    let adjFriendly = false;
-    for (let ddy = -1; ddy <= 1; ddy++) {
-      for (let ddx = -1; ddx <= 1; ddx++) {
-        if (ddx === 0 && ddy === 0) continue;
-        const ck = (nx+ddx) + ',' + (ny+ddy);
-        if (worldObjects[ck]?.team === myTeamId) adjFriendly = true;
-        if (teamSnap.spawnX === nx+ddx && teamSnap.spawnY === ny+ddy) adjFriendly = true;
-      }
-    }
-    // Also ok if the old position still links back
-    if (!adjFriendly) return;
-
-    // Move
-    const objCopy = { ...u.obj };
-    db.ref('worldObjects/' + u.k).remove();
-    db.ref('worldObjects/' + nk).set(objCopy);
-  });
-}, 4000);
-
-/* ═══════════════════════════════════════════════════════════════
-   INIT
-   ═══════════════════════════════════════════════════════════════ */
-genTerrain();
-tryAutoLogin();
+// ===== INIT =====
+genTerrain();tryAL();
 </script>
 </body>
 </html>
